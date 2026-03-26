@@ -238,7 +238,7 @@ run_gh_api() {
   if ! GH_PAGER=cat gh api "$@"; then
     echo "GitHub API call failed during: $step" >&2
     echo "Endpoint: $1" >&2
-    exit 1
+    return 1
   fi
 }
 

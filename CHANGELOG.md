@@ -5,6 +5,13 @@ All notable changes to `gql-client` are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.1.2](https://github.com/nuewframe/gql-client/compare/gql-client-v1.1.1...gql-client-v1.1.2) (2026-03-26)
+
+
+### Bug Fixes
+
+* add Deno version metadata to main command ([c9a7c36](https://github.com/nuewframe/gql-client/commit/c9a7c3601450fa9254a989d908da6ccb07c8a7f4))
+
 ## [1.1.1](https://github.com/nuewframe/gql-client/compare/gql-client-v1.1.0...gql-client-v1.1.1) (2026-03-26)
 
 

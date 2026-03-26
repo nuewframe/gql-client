@@ -264,13 +264,13 @@ fi
 RULESET_ID="$(run_gh_api "list rulesets" "repos/$REPO/rulesets?targets=branch&per_page=100" \
   --header 'Accept: application/vnd.github+json' \
   --header "X-GitHub-Api-Version: $API_VERSION" \
-  --jq ".[] | select(.name==\"$RULESET_NAME\" and .target==\"branch\") | .id" | head -n 1 || true)"
+  --jq ".[] | select(.name==\"$RULESET_NAME\" and .target==\"branch\") | .id" | head -n 1)"
 
 if [ -z "${RULESET_ID:-}" ]; then
   RULESET_ID="$(run_gh_api "discover existing branch ruleset" "repos/$REPO/rules/branches/$BRANCH" \
     --header 'Accept: application/vnd.github+json' \
     --header "X-GitHub-Api-Version: $API_VERSION" \
-    --jq '.[] | select(.ruleset_source_type=="Repository" and .ruleset_source=="'"$REPO"'") | .ruleset_id' | sort -u | head -n 1 || true)"
+    --jq '.[] | select(.ruleset_source_type=="Repository" and .ruleset_source=="'"$REPO"'") | .ruleset_id' | sort -u | head -n 1)"
 fi
 
 if [ -n "${RULESET_ID:-}" ]; then

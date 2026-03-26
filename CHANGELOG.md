@@ -7,10 +7,9 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [1.1.0](https://github.com/nuewframe/gql-client/compare/gql-client-v1.0.1...gql-client-v1.1.0) (2026-03-26)
 
-
 ### Features
 
-* initial release of gql-client ([71b7f73](https://github.com/nuewframe/gql-client/commit/71b7f73e59dbb633e86faeb47a3442a2f1899638))
+- initial release of gql-client ([71b7f73](https://github.com/nuewframe/gql-client/commit/71b7f73e59dbb633e86faeb47a3442a2f1899638))
 
 ## [Unreleased]
 

@@ -1,5 +1,6 @@
 import { assert, assertEquals, assertExists } from '@std/assert';
 
+import denoJson from './deno.json' with { type: 'json' };
 import { mainCommand } from './main.ts';
 import { executeCommand } from './commands/execute.ts';
 import { listCommand } from './commands/list.ts';
@@ -18,7 +19,7 @@ Deno.test('GQL CLI - main module file exists', async () => {
 
 Deno.test('GQL CLI - main command metadata is set', () => {
   assertEquals(mainCommand.getName(), 'gql-client');
-  assertEquals(mainCommand.getVersion(), '1.0.0');
+  assertEquals(mainCommand.getVersion(), denoJson.version);
   assert(mainCommand.getDescription().length > 0);
 });
 

@@ -32,6 +32,12 @@ cat > "$HOOK" << 'HOOK_BODY'
 
 set -eu
 
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+  printf '\033[31m✗ pre-push: not inside a git repository\033[0m\n' >&2
+  exit 1
+}
+cd "$REPO_ROOT"
+
 printf '▶ pre-push: fmt check...\n'
 deno task fmt:check
 

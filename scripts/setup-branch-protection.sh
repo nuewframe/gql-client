@@ -120,9 +120,10 @@ if is_true "$REQUIRE_STATUS_CHECKS" && [ -z "${REQUIRED_CHECKS:-}" ]; then
   exit 1
 fi
 
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || printf '%s' "$PWD")"
 HAS_CODEOWNERS=false
 for codeowners_path in .github/CODEOWNERS docs/CODEOWNERS CODEOWNERS; do
-  if [ -f "$codeowners_path" ]; then
+  if [ -f "$REPO_ROOT/$codeowners_path" ]; then
     HAS_CODEOWNERS=true
     break
   fi

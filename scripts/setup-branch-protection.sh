@@ -49,6 +49,10 @@
 #   - REQUIRED_CHECKS="Test & Lint"   (comma-separated check context names from CI)
 #   - STRICT_STATUS_CHECKS=true|false (require branch up-to-date before merge)
 #   - REQUIRE_SIGNED_COMMITS=true|false
+#   - ALLOW_ADMIN_BYPASS=true|false     (let repo admins merge without satisfying rules)
+#   - ADMIN_BYPASS_MODE=pull_request|always
+#       pull_request — admins can merge PRs bypassing rules but cannot push directly (default)
+#       always       — admins bypass rules on both direct pushes and PRs
 
 set -eu
 
@@ -69,6 +73,8 @@ REQUIRE_STATUS_CHECKS="${REQUIRE_STATUS_CHECKS:-true}"
 REQUIRED_CHECKS="${REQUIRED_CHECKS:-Test & Lint}"
 STRICT_STATUS_CHECKS="${STRICT_STATUS_CHECKS:-true}"
 REQUIRE_SIGNED_COMMITS="${REQUIRE_SIGNED_COMMITS:-false}"
+ALLOW_ADMIN_BYPASS="${ALLOW_ADMIN_BYPASS:-false}"
+ADMIN_BYPASS_MODE="${ADMIN_BYPASS_MODE:-pull_request}"
 
 is_true() {
   [ "$1" = "true" ]
@@ -102,6 +108,15 @@ validate_bool REQUIRE_LINEAR_HISTORY "$REQUIRE_LINEAR_HISTORY"
 validate_bool REQUIRE_STATUS_CHECKS "$REQUIRE_STATUS_CHECKS"
 validate_bool STRICT_STATUS_CHECKS "$STRICT_STATUS_CHECKS"
 validate_bool REQUIRE_SIGNED_COMMITS "$REQUIRE_SIGNED_COMMITS"
+validate_bool ALLOW_ADMIN_BYPASS "$ALLOW_ADMIN_BYPASS"
+
+case "$ADMIN_BYPASS_MODE" in
+  pull_request|always) ;;
+  *)
+    echo "Invalid value for ADMIN_BYPASS_MODE: $ADMIN_BYPASS_MODE (expected pull_request or always)" >&2
+    exit 1
+    ;;
+esac
 
 case "$REQUIRED_APPROVALS" in
   ''|*[!0-9]*)
@@ -138,6 +153,15 @@ if [ "$REQUIRE_CODE_OWNER_REVIEW" = "auto" ]; then
 else
   REQUIRE_CODE_OWNER_REVIEW_RESOLVED="$REQUIRE_CODE_OWNER_REVIEW"
 fi
+
+build_bypass_actors_json() {
+  # actor_id 5 = the built-in Repository Admin role (GitHub built-in role IDs are stable)
+  if is_true "$ALLOW_ADMIN_BYPASS"; then
+    printf '[{"actor_id":5,"actor_type":"RepositoryRole","bypass_mode":"%s"}]' "$ADMIN_BYPASS_MODE"
+  else
+    printf '[]'
+  fi
+}
 
 build_status_checks_json() {
   result='['
@@ -208,7 +232,7 @@ build_ruleset_payload() {
   "name": "$RULESET_NAME",
   "target": "branch",
   "enforcement": "active",
-  "bypass_actors": [],
+  "bypass_actors": $(build_bypass_actors_json),
   "conditions": {
     "ref_name": {
       "include": ["refs/heads/$BRANCH"],
@@ -253,6 +277,10 @@ if is_true "$REQUIRE_STATUS_CHECKS"; then
   echo "Strict status checks: $STRICT_STATUS_CHECKS"
 fi
 echo "Require signed commits: $REQUIRE_SIGNED_COMMITS"
+echo "Admin bypass: $ALLOW_ADMIN_BYPASS"
+if is_true "$ALLOW_ADMIN_BYPASS"; then
+  echo "Admin bypass mode: $ADMIN_BYPASS_MODE"
+fi
 
 if ! validate_payload; then
   echo "Generated payload is not valid JSON." >&2

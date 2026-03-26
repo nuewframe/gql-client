@@ -1,0 +1,279 @@
+export interface GqlContent {
+  type: 'query' | 'mutation';
+  name?: string;
+  query: string;
+  variables?: Record<string, unknown>;
+  headers?: Record<string, string>;
+  endpoint?: string;
+  httpVersion?: string;
+}
+
+export interface ParsedGqlFile {
+  variables: Record<string, string>;
+  requests: GqlContent[];
+  endpoint?: string;
+  httpVersion?: string;
+}
+
+export interface GqlParseOptions {
+  allowCommandSubstitution?: boolean;
+}
+
+export async function loadGqlFile(
+  filePath: string,
+  options: GqlParseOptions = {},
+): Promise<ParsedGqlFile> {
+  const content = await Deno.readTextFile(filePath);
+  const sections = content.split(/^###$/m);
+
+  // Parse variables from the first section
+  const fileVariables: Record<string, string> = {};
+  if (sections[0]) {
+    const varLines = sections[0].split('\n');
+    for (const line of varLines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#')) continue; // Skip commented lines
+      if (trimmed.startsWith('@') && trimmed.includes(':')) {
+        const colonIdx = trimmed.indexOf(':');
+        const key = trimmed.substring(0, colonIdx);
+        const rawValue = trimmed.substring(colonIdx + 1).trim();
+        const varName = key.substring(1).trim();
+        // Strip surrounding double-quotes (e.g. @HOST_URL: "https://..."
+        fileVariables[varName] = rawValue.replace(/^"(.*)"$/, '$1');
+      }
+    }
+  }
+
+  // Use only file-defined variables (no auth variable override)
+  const allVariables = { ...fileVariables };
+
+  // Parse requests from remaining sections
+  const requests: GqlContent[] = [];
+  let endpoint: string | undefined;
+  let httpVersion: string | undefined;
+
+  for (let i = 1; i < sections.length; i++) {
+    const section = sections[i].trim();
+    if (!section) continue;
+
+    const request = parseRequestSection(section, allVariables, options);
+    if (request) {
+      requests.push(request);
+      // Use endpoint from first request if found
+      if (!endpoint && request.endpoint) {
+        endpoint = request.endpoint;
+        httpVersion = request.httpVersion;
+      }
+    }
+  }
+
+  return { variables: allVariables, requests, endpoint, httpVersion };
+}
+
+function parseRequestSection(
+  section: string,
+  fileVariables: Record<string, string>,
+  options: GqlParseOptions,
+): GqlContent | null {
+  const lines = section.split('\n');
+  let query = '';
+  const headers: Record<string, string> = {};
+  let variables: Record<string, unknown> = {};
+  let endpoint: string | undefined;
+  let httpVersion: string | undefined;
+  let inHeaders = false;
+  let inVariables = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Skip empty lines and comments
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    // Check for endpoint line (POST/GET/PUT/etc. followed by URL)
+    if (trimmed.match(/^(GET|POST|PUT|DELETE|PATCH)\s+/i)) {
+      const parts = trimmed.split(/\s+/);
+      if (parts.length >= 2) {
+        // Extract method and URL
+        const _method = parts[0].toUpperCase();
+        const url = parts[1];
+
+        // Check if HTTP version is specified
+        if (parts.length >= 3 && parts[2].toUpperCase().startsWith('HTTP/')) {
+          httpVersion = parts[2];
+        }
+
+        // For GraphQL, we typically only care about the URL since graphql-request handles the method
+        endpoint = substituteVariables(url, fileVariables, options);
+      }
+    } // Check if this is a header line (contains colon and looks like header)
+    // Headers should be simple key-value pairs, not GraphQL syntax
+    else if (
+      trimmed.includes(':') &&
+      !trimmed.startsWith('{') &&
+      !trimmed.startsWith('query') &&
+      !trimmed.startsWith('mutation') &&
+      !trimmed.includes('$') && // GraphQL variables
+      !trimmed.includes('(') && // GraphQL function calls
+      trimmed.split(':').length === 2
+    ) {
+      // Simple key:value format
+      inHeaders = true;
+      inVariables = false;
+      const [key, value] = trimmed.split(':', 2);
+      headers[key.trim()] = substituteVariables(value.trim(), fileVariables, options);
+    } // Check if this is the start of JSON variables (not GraphQL query)
+    else if (trimmed.startsWith('{') && !inHeaders && !inVariables) {
+      inHeaders = false;
+      inVariables = true;
+      // Collect the JSON block
+      const jsonStart = lines.indexOf(line);
+      const jsonLines = [];
+      for (let j = jsonStart; j < lines.length; j++) {
+        jsonLines.push(lines[j]);
+        if (lines[j].trim().endsWith('}') && !lines[j].trim().includes('{')) {
+          break;
+        }
+      }
+      const jsonContent = jsonLines.join('\n');
+      try {
+        // Apply variable substitution to the JSON content before parsing
+        const substitutedJson = substituteVariables(jsonContent, fileVariables, options);
+        variables = JSON.parse(substitutedJson);
+      } catch (error) {
+        console.warn(`Warning: Failed to parse variables JSON: ${error}`);
+        console.warn(`JSON content: ${jsonContent}`);
+      }
+      break; // Stop processing after JSON
+    } // GraphQL query/mutation
+    else if (trimmed.startsWith('query') || trimmed.startsWith('mutation')) {
+      inHeaders = false;
+      inVariables = false;
+      query += line + '\n';
+    } // Continue collecting query
+    else if (!inHeaders && !inVariables) {
+      query += line + '\n';
+    }
+  }
+
+  if (!query.trim()) return null;
+
+  // Determine type and name
+  const queryLines = query.trim().split('\n');
+  let type: 'query' | 'mutation' = 'query';
+  let name: string | undefined;
+
+  for (const line of queryLines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('query')) {
+      type = 'query';
+      const match = trimmed.match(/query\s+(\w+)/);
+      if (match) name = match[1];
+    } else if (trimmed.startsWith('mutation')) {
+      type = 'mutation';
+      const match = trimmed.match(/mutation\s+(\w+)/);
+      if (match) name = match[1];
+    }
+  }
+
+  return {
+    type,
+    name,
+    query: cleanGraphQLQuery(query.trim()),
+    variables,
+    headers,
+    endpoint,
+    httpVersion,
+  };
+}
+
+function substituteVariables(
+  text: string,
+  variables: Record<string, string>,
+  options: GqlParseOptions,
+): string {
+  let result = text;
+
+  // First, substitute file variables
+  for (const [key, value] of Object.entries(variables)) {
+    result = result.replace(new RegExp(`{{${key}}}`, 'g'), value);
+  }
+
+  // Then handle environment variables and command execution
+  result = result.replace(/\{\{([^}]+)\}\}/g, (match, content) => {
+    // Check if it's a command execution (starts with $)
+    if (content.startsWith('$')) {
+      if (!options.allowCommandSubstitution) {
+        return match;
+      }
+
+      // WARNING: command substitution executes shell commands from query files.
+      // Use only with trusted .gql/.http files.
+      const command = content.slice(1).trim(); // Remove the $
+      try {
+        const output = new Deno.Command('sh', {
+          args: ['-c', command],
+          stdout: 'piped',
+          stderr: 'piped',
+        }).outputSync();
+
+        if (output.success) {
+          return new TextDecoder().decode(output.stdout).trim();
+        } else {
+          console.warn(`Command failed: ${command}`);
+          return match; // Return original if command fails
+        }
+      } catch (error) {
+        console.warn(`Failed to execute command: ${command}, error: ${error}`);
+        return match; // Return original if execution fails
+      }
+    }
+
+    // Check if it's an environment variable
+    const envValue = Deno.env.get(content);
+    if (envValue !== undefined) {
+      return envValue;
+    }
+
+    // If neither command nor env var, return original
+    return match;
+  });
+
+  return result;
+}
+
+function cleanGraphQLQuery(query: string): string {
+  // Preserve GraphQL structure with proper indentation and newlines
+  const lines = query.split('\n');
+  const cleanedLines = lines.map((line) => line.trim()).filter((line) => line.length > 0);
+
+  // Rebuild with proper indentation
+  let result = '';
+  let indentLevel = 0;
+
+  for (let i = 0; i < cleanedLines.length; i++) {
+    const line = cleanedLines[i];
+    const trimmed = line.trim();
+
+    // Decrease indent for closing braces
+    if (trimmed.startsWith('}')) {
+      indentLevel = Math.max(0, indentLevel - 1);
+    }
+
+    // Add proper indentation
+    const indent = '  '.repeat(indentLevel);
+    result += indent + trimmed;
+
+    // Increase indent for opening braces
+    if (trimmed.endsWith('{')) {
+      indentLevel++;
+    }
+
+    // Add newline (except for last line)
+    if (i < cleanedLines.length - 1) {
+      result += '\n';
+    }
+  }
+
+  return result;
+}

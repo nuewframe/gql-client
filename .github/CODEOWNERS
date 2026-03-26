@@ -1,0 +1,3 @@
+# Global code owners — all PRs require at least one approval from a maintainer.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+* @nuewframe/maintainers

@@ -1,6 +1,6 @@
 {
   "name": "@nuewframe/gql-client",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "exports": "./main.ts",
   "tasks": {
     "dev": "deno run --allow-read --allow-write --allow-env --allow-net --allow-run main.ts",
@@ -27,11 +27,17 @@
   },
   "compilerOptions": {
     "strict": true,
-    "lib": ["ES2022", "DOM", "deno.ns"]
+    "lib": [
+      "ES2022",
+      "DOM",
+      "deno.ns"
+    ]
   },
   "lint": {
     "rules": {
-      "tags": ["recommended"]
+      "tags": [
+        "recommended"
+      ]
     }
   },
   "fmt": {

@@ -1,0 +1,51 @@
+#!/usr/bin/env sh
+# Install local Git hooks for this repository.
+#
+# Usage:
+#   sh scripts/install-hooks.sh
+#   deno task hooks
+#
+# The pre-push hook runs fmt check, lint, and tests before every push.
+# To bypass on a single push: git push --no-verify
+
+set -eu
+
+GIT_DIR="$(git rev-parse --git-dir 2>/dev/null)" || {
+  printf '\033[31m✗ Not inside a git repository\033[0m\n' >&2
+  exit 1
+}
+
+HOOKS_DIR="$GIT_DIR/hooks"
+mkdir -p "$HOOKS_DIR"
+HOOK="$HOOKS_DIR/pre-push"
+
+if [ -f "$HOOK" ] && ! grep -q '# managed by install-hooks.sh' "$HOOK" 2>/dev/null; then
+  printf 'Warning: existing pre-push hook is not managed by install-hooks.sh\n' >&2
+  printf '  Backed up to: %s.bak\n' "$HOOK" >&2
+  cp "$HOOK" "${HOOK}.bak"
+fi
+
+cat > "$HOOK" << 'HOOK_BODY'
+#!/usr/bin/env sh
+# managed by install-hooks.sh — do not edit manually
+# Re-install: sh scripts/install-hooks.sh
+
+set -eu
+
+printf '▶ pre-push: fmt check...\n'
+deno task fmt:check
+
+printf '▶ pre-push: lint...\n'
+deno task lint
+
+printf '▶ pre-push: test...\n'
+deno task test
+
+printf '\033[32m✓ All checks passed\033[0m\n'
+HOOK_BODY
+
+chmod +x "$HOOK"
+
+printf '\033[32m✓ pre-push hook installed\033[0m\n'
+printf '  Location : %s\n' "$HOOK"
+printf '  Bypass   : git push --no-verify\n'

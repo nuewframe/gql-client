@@ -1,5 +1,7 @@
 # gql-client
 
+[![CI](https://github.com/nuewframe/gql-client/actions/workflows/ci.yml/badge.svg)](https://github.com/nuewframe/gql-client/actions/workflows/ci.yml)
+
 A Deno CLI for executing GraphQL queries and mutations from `.http` files. Integrates with [`okta-client`](https://github.com/nuewframe/okta-client) to inject `Authorization: Bearer` headers automatically.
 
 ## Why

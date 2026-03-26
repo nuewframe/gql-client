@@ -226,9 +226,12 @@ EOF
 }
 
 validate_payload() {
-  if command -v jq >/dev/null 2>&1; then
-    build_ruleset_payload | jq empty >/dev/null
+  if ! command -v jq >/dev/null 2>&1; then
+    # jq is not available; skip JSON validation but treat as success.
+    return 0
   fi
+
+  build_ruleset_payload | jq empty >/dev/null
 }
 
 run_gh_api() {

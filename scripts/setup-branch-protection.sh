@@ -70,6 +70,7 @@ fi
 REPO="${REPO:-}"
 API_VERSION="${API_VERSION:-2026-03-10}"
 BRANCH="${BRANCH:-main}"
+BRANCH_URL="$(jq -rn --arg value "$BRANCH" '$value | @uri')"
 ENFORCE_PR="${ENFORCE_PR:-true}"
 REQUIRED_APPROVALS="${REQUIRED_APPROVALS:-1}"
 REQUIRE_CODE_OWNER_REVIEW="${REQUIRE_CODE_OWNER_REVIEW:-auto}"
@@ -288,7 +289,7 @@ RULESET_ID="$(run_gh_api "list rulesets" "repos/$REPO/rulesets?targets=branch&pe
   --jq 'limit(1; .[] | select(.name==env.RULESET_NAME and .target=="branch" and ((.conditions.ref_name.include // []) | index("refs/heads/" + env.BRANCH) != null)) | .id)')"
 
 if [ -z "${RULESET_ID:-}" ]; then
-  RULESET_ID="$(run_gh_api "discover existing branch ruleset" "repos/$REPO/rules/branches/$BRANCH" \
+  RULESET_ID="$(run_gh_api "discover existing branch ruleset" "repos/$REPO/rules/branches/$BRANCH_URL" \
     --header 'Accept: application/vnd.github+json' \
     --header "X-GitHub-Api-Version: $API_VERSION" \
     --jq '[.[] | select(.ruleset_source_type=="Repository" and .ruleset_source==env.REPO) | .ruleset_id] | unique | .[0] // empty')"
@@ -321,7 +322,7 @@ echo "Ruleset applied successfully (id=$APPLIED_RULESET_ID)"
 
 echo ""
 echo "Effective active rules on $BRANCH:"
-RULE_LINES="$(run_gh_api "verify effective rules" "repos/$REPO/rules/branches/$BRANCH" \
+RULE_LINES="$(run_gh_api "verify effective rules" "repos/$REPO/rules/branches/$BRANCH_URL" \
   --header 'Accept: application/vnd.github+json' \
   --header "X-GitHub-Api-Version: $API_VERSION" \
   --jq '.[] | "- " + .type + " (source: " + .ruleset_source + ", id: " + (.ruleset_id|tostring) + ")"')"

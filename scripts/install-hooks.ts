@@ -66,7 +66,9 @@ printf '\\033[32m✓ All checks passed\\033[0m\\n'
 try {
   const gitVersionResult = await runGit(['--version']);
   if (gitVersionResult.code !== 0 || !gitVersionResult.output) {
-    console.error(gitVersionResult.output || 'Error: git is not installed or not available on PATH.');
+    console.error(
+      gitVersionResult.output || 'Error: git is not installed or not available on PATH.',
+    );
     Deno.exit(1);
   }
 

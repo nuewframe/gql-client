@@ -14,7 +14,7 @@
     "build:linux-x64": "deno compile --allow-read --allow-write --allow-env --allow-net --allow-run --target x86_64-unknown-linux-gnu --vendor --output dist/gql-client-linux-x64 main.ts",
     "build:windows-x64": "deno compile --allow-read --allow-write --allow-env --allow-net --allow-run --target x86_64-pc-windows-msvc --vendor --output dist/gql-client-windows-x64.exe main.ts",
     "build:all": "deno task build:macos-x64 && deno task build:macos-arm64 && deno task build:linux-x64 && deno task build:windows-x64",
-    "hooks": "deno run --allow-run --allow-env -q -e \"if (Deno.build.os === 'windows') { console.error('Git hooks installer is POSIX-only; please run this command from Git Bash or WSL.'); Deno.exit(1); } const cmd = new Deno.Command('sh', { args: ['scripts/install-hooks.sh'] }); const { code } = cmd.outputSync(); Deno.exit(code);\""
+    "hooks": "deno run --allow-run --allow-read --allow-write scripts/install-hooks.ts"
   },
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@^1.0.0",

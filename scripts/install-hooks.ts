@@ -1,18 +1,33 @@
+import { isAbsolute, join, normalize, resolve } from '@std/path';
+
 const installHint = 'https://docs.deno.com/runtime/getting_started/installation/';
 const managedMarker = '# managed by install-hooks.ts';
 const reinstallHint = '# Re-install: deno task hooks';
 
-async function runGit(args: string[], cwd?: string): Promise<{ code: number; stdout: string }> {
+async function runGit(args: string[], cwd?: string): Promise<{ code: number; output: string }> {
   const command = new Deno.Command('git', {
     args,
     cwd,
     stdout: 'piped',
-    stderr: 'null',
+    stderr: 'piped',
   });
   const output = await command.output();
+  const decoder = new TextDecoder();
+  const stdoutText = decoder.decode(output.stdout).trim();
+  const stderrText = decoder.decode(output.stderr).trim();
+  let combined = stdoutText;
+
+  if (output.code !== 0) {
+    if (stdoutText && stderrText) {
+      combined = `${stdoutText}\n${stderrText}`;
+    } else if (stderrText) {
+      combined = stderrText;
+    }
+  }
+
   return {
     code: output.code,
-    stdout: new TextDecoder().decode(output.stdout).trim(),
+    output: combined,
   };
 }
 
@@ -50,35 +65,38 @@ printf '\\033[32m✓ All checks passed\\033[0m\\n'
 
 try {
   const gitVersionResult = await runGit(['--version']);
-  if (gitVersionResult.code !== 0 || !gitVersionResult.stdout) {
-    console.error('Error: git is not installed or not available on PATH.');
+  if (gitVersionResult.code !== 0 || !gitVersionResult.output) {
+    console.error(gitVersionResult.output || 'Error: git is not installed or not available on PATH.');
     Deno.exit(1);
   }
 
   const repoRootResult = await runGit(['rev-parse', '--show-toplevel']);
-  if (repoRootResult.code !== 0 || !repoRootResult.stdout) {
-    console.error('\x1b[31m✗ Not inside a git repository\x1b[0m');
+  if (repoRootResult.code !== 0 || !repoRootResult.output) {
+    console.error(repoRootResult.output || '\x1b[31m✗ Not inside a git repository\x1b[0m');
     Deno.exit(1);
   }
-  const repoRoot = repoRootResult.stdout;
+  const repoRoot = repoRootResult.output;
 
   const gitDirResult = await runGit(['rev-parse', '--git-dir'], repoRoot);
-  if (gitDirResult.code !== 0 || !gitDirResult.stdout) {
-    console.error('\x1b[31m✗ Failed to determine git directory\x1b[0m');
+  if (gitDirResult.code !== 0 || !gitDirResult.output) {
+    console.error(gitDirResult.output || '\x1b[31m✗ Failed to determine git directory\x1b[0m');
     Deno.exit(1);
   }
+  const gitDir = normalize(
+    isAbsolute(gitDirResult.output) ? gitDirResult.output : resolve(repoRoot, gitDirResult.output),
+  );
 
   const hooksPathResult = await runGit(['config', '--get', 'core.hooksPath'], repoRoot);
-  const hooksPath = hooksPathResult.code === 0 ? hooksPathResult.stdout : '';
-  const hooksDir = hooksPath
-    ? (hooksPath.startsWith('/') || /^[A-Za-z]:[\\/]/.test(hooksPath)
-      ? hooksPath
-      : `${repoRoot}/${hooksPath}`)
-    : `${repoRoot}/${gitDirResult.stdout}/hooks`;
+  const hooksPath = hooksPathResult.code === 0 ? hooksPathResult.output : '';
+  const hooksDir = normalize(
+    hooksPath
+      ? (isAbsolute(hooksPath) ? hooksPath : resolve(repoRoot, hooksPath))
+      : join(gitDir, 'hooks'),
+  );
 
   await Deno.mkdir(hooksDir, { recursive: true });
 
-  const hookPath = `${hooksDir}/pre-push`;
+  const hookPath = join(hooksDir, 'pre-push');
 
   let existingHook: string | null = null;
   try {

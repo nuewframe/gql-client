@@ -6,7 +6,7 @@ import { executeCommand } from './commands/execute.ts';
 import { configCommand } from './commands/config.ts';
 import { validateCommand } from './commands/validate.ts';
 import { Logger } from './utils/logger.ts';
-import { getConfig, saveConfig } from './config/config.ts';
+import { getConfig, saveConfig } from './commands/config.ts';
 import { loadGqlFile } from './utils/gql-parser.ts';
 
 Deno.test('GQL CLI - main module file exists', async () => {

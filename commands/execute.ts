@@ -5,7 +5,7 @@ import { stringify as yamlStringify } from '@std/yaml';
 import { loadCredentials } from './auth.ts';
 import { loadGqlFile, validateHttpFile } from '../utils/gql-parser.ts';
 import type { ParsedGqlFile, ValidationResult } from '../utils/gql-parser.ts';
-import { getConfig } from '../config/config.ts';
+import { getConfig } from './config.ts';
 import { Logger } from '../utils/logger.ts';
 
 function normalizeAccessToken(token?: string): string | undefined {

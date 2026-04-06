@@ -35,7 +35,7 @@ import { request } from 'graphql-request';
 // Internal — relative path with .ts extension
 import { parseHttpFile } from '../utils/gql-parser.ts';
 import { Logger } from '../utils/logger.ts';
-import { loadConfig } from '../config/config.ts';
+import { getConfig } from '../commands/config.ts';
 ```
 
 ### Forbidden patterns
@@ -71,7 +71,7 @@ deno cache --vendor main.ts
 
 ## Config File — `~/.gql-client/config.json`
 
-Loaded and saved by `config/config.ts`. Schema:
+Loaded and saved by `commands/config.ts`. Schema:
 
 ```json
 {
@@ -88,8 +88,8 @@ Loaded and saved by `config/config.ts`. Schema:
 Load with:
 
 ```typescript
-import { loadConfig, saveConfig } from '../config/config.ts';
-const config = await loadConfig(); // returns null if file missing
+import { getConfig, saveConfig } from '../commands/config.ts';
+const config = getConfig(); // returns {} if file missing
 ```
 
 ## Credential File — `~/.nuewframe/credential.json`

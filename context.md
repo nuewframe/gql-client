@@ -68,7 +68,7 @@ Key elements:
 | `main.ts`             | Export `mainCommand`; entry point when `import.meta.main`            |
 | `commands/execute.ts` | Core command: parse → resolve variables → execute → format → print   |
 | `utils/gql-parser.ts` | `parseHttpFile()`, `resolveVariables()`, `parseRequests()`           |
-| `config/config.ts`    | `loadConfig()`, `saveConfig()` for `~/.gql-client/config.json`       |
+| `commands/config.ts`  | `getConfig()`, `saveConfig()` for `~/.gql-client/config.json`        |
 
 ## Command Surface Summary
 

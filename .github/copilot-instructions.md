@@ -12,11 +12,8 @@ from `.http` files. It integrates with `okta-client` by reading tokens from
 main.ts                   ← CLI entry point; registers all commands with Cliffy
 commands/
   execute.ts              ← Execute one or all requests from a .http file
-  list.ts                 ← List .http files in a directory tree
-  config.ts               ← Manage ~/.gql-client/config.json
-  auth.ts                 ← Check/clear okta-client credentials
-config/
-  config.ts               ← Load/save ~/.gql-client/config.json (JSON)
+  config.ts               ← Manage and load/save ~/.gql-client/config.json
+  auth.ts                 ← Credential loading used by execute
 utils/
   gql-parser.ts           ← Parse JetBrains HTTP Client format .http files
   logger.ts               ← Logger class (none/info/debug) that writes to stderr
@@ -50,7 +47,7 @@ Enforced by `deno fmt` and `deno lint`. Settings in `deno.json`:
 ### Imports
 
 - JSR and npm packages: declared in `deno.json` `imports` map, used bare
-- Internal: relative with `.ts` extension (`../config/config.ts`)
+- Internal: relative with `.ts` extension (`./config.ts` or `../utils/logger.ts`)
 - Never use `https://` URLs or `jsr:`/`npm:` directly in source files
 
 ### Naming

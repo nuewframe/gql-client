@@ -1,6 +1,6 @@
 import { Command } from '@cliffy/command';
 import { stringify as yamlStringify } from '@std/yaml';
-import { relative } from '@std/path';
+import { relative, resolve } from '@std/path';
 import { validateHttpFile } from '../utils/gql-parser.ts';
 import type { ValidationResult } from '../utils/gql-parser.ts';
 import { Logger } from '../utils/logger.ts';
@@ -14,13 +14,14 @@ export const validateCommand = new Command()
     const logger = new Logger(options.logLevel as 'none' | 'info' | 'debug');
 
     try {
-      const content = await Deno.readTextFile(file);
+      const resolvedFile = resolve(Deno.cwd(), file);
+      const content = await Deno.readTextFile(resolvedFile);
       const issues = validateHttpFile(content);
 
       const errors = issues.filter((i) => i.severity === 'error').length;
       const warnings = issues.filter((i) => i.severity === 'warning').length;
 
-      const relPath = relative(Deno.cwd(), file) || file;
+      const relPath = relative(Deno.cwd(), resolvedFile) || file;
       const result: ValidationResult = { file: relPath, errors, warnings, issues };
 
       if (issues.length === 0) {

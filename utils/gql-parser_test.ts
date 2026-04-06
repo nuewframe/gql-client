@@ -189,7 +189,10 @@ Content-Type: application/json
 query Q { ping }
 `;
   const issues = validateHttpFile(content);
-  assertEquals(issues.some((i) => i.severity === 'error' && i.message.includes('No request sep')), true);
+  assertEquals(
+    issues.some((i) => i.severity === 'error' && i.message.includes('No request sep')),
+    true,
+  );
 });
 
 Deno.test('validateHttpFile - no issues for valid file', () => {

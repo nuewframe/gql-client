@@ -67,7 +67,15 @@ export async function loadGqlFile(
   // Use only file-defined variables (no auth variable override)
   const allVariables = { ...fileVariables };
 
-  // Parse requests from remaining sections
+  // Parse requests from remaining sections.
+  // Re-scan the original content to extract separator labels (text after ###).
+  const separatorLabelRe = /^###[ \t]*(.*)?$/gm;
+  const separatorLabels: string[] = [];
+  let sepMatch;
+  while ((sepMatch = separatorLabelRe.exec(content)) !== null) {
+    separatorLabels.push((sepMatch[1] ?? '').trim());
+  }
+
   const requests: GqlContent[] = [];
   let endpoint: string | undefined;
   let httpVersion: string | undefined;
@@ -76,7 +84,8 @@ export async function loadGqlFile(
     const section = sections[i].trim();
     if (!section) continue;
 
-    const request = parseRequestSection(section, allVariables, options);
+    const separatorLabel = separatorLabels[i - 1] || undefined;
+    const request = parseRequestSection(section, allVariables, options, separatorLabel);
     if (request) {
       requests.push(request);
       // Use endpoint from first request if found
@@ -94,6 +103,7 @@ function parseRequestSection(
   section: string,
   fileVariables: Record<string, string>,
   options: GqlParseOptions,
+  separatorLabel?: string,
 ): GqlContent | null {
   const lines = section.split('\n');
   let query = '';
@@ -160,9 +170,8 @@ function parseRequestSection(
         // Apply variable substitution to the JSON content before parsing
         const substitutedJson = substituteVariables(jsonContent, fileVariables, options);
         variables = JSON.parse(substitutedJson);
-      } catch (error) {
-        console.warn(`Warning: Failed to parse variables JSON: ${error}`);
-        console.warn(`JSON content: ${jsonContent}`);
+      } catch {
+        // Invalid JSON variables — silently skip; the validator will catch structural issues
       }
       break; // Stop processing after JSON
     } // GraphQL query/mutation
@@ -194,6 +203,11 @@ function parseRequestSection(
       const match = trimmed.match(/mutation\s+(\w+)/);
       if (match) name = match[1];
     }
+  }
+
+  // Fallback: use the separator label (text after ###) if no query name
+  if (!name && separatorLabel) {
+    name = separatorLabel;
   }
 
   return {
@@ -240,12 +254,10 @@ function substituteVariables(
         if (output.success) {
           return new TextDecoder().decode(output.stdout).trim();
         } else {
-          console.warn(`Command failed: ${command}`);
-          return match; // Return original if command fails
+          return match;
         }
-      } catch (error) {
-        console.warn(`Failed to execute command: ${command}, error: ${error}`);
-        return match; // Return original if execution fails
+      } catch {
+        return match;
       }
     }
 
@@ -338,7 +350,9 @@ export function validateHttpFile(content: string): HttpFileIssue[] {
         severity: 'error',
         line: i + 1,
         message:
-          `"###" is a request separator, not a comment. To comment out a line, use "#" instead (e.g. "# ${trimmed.slice(4)}").`,
+          `"###" is a request separator, not a comment. To comment out a line, use "#" instead (e.g. "# ${
+            trimmed.slice(4)
+          }").`,
       });
     }
   }
@@ -379,8 +393,7 @@ export function validateHttpFile(content: string): HttpFileIssue[] {
     if (!hasMethod) {
       issues.push({
         severity: 'warning',
-        message:
-          `Request section ${i} has no HTTP method line (e.g. POST https://... HTTP/1.1).`,
+        message: `Request section ${i} has no HTTP method line (e.g. POST https://... HTTP/1.1).`,
       });
     }
 
@@ -393,11 +406,14 @@ export function validateHttpFile(content: string): HttpFileIssue[] {
     }
   }
 
-  // ── Check for undefined variable references (skip command substitutions) ──
+  // ── Check for undefined variable references ──
+  // Match {{ WORD }} but skip command substitutions {{ $(...) }}
   const varRefRe = /\{\{\s*(\w+)\s*\}\}/g;
   let refMatch;
   while ((refMatch = varRefRe.exec(content)) !== null) {
     const varName = refMatch[1];
+    // Skip the leading '$' token inside command substitutions
+    if (varName === '$') continue;
     if (!definedVars.has(varName)) {
       const lineNum = content.substring(0, refMatch.index).split('\n').length;
       issues.push({

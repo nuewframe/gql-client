@@ -1,0 +1,16 @@
+### @TOKEN:{{$(echo "Test")}}
+@HOST_URL: https://countries.trevorblades.com/
+
+### Countries data (continents, languages, currencies)
+POST {{HOST_URL}} HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+query { countries { code name } } 
+
+### Countries data (continents, languages, currencies)
+POST {{HOST_URL}} HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+query { countries { code name } } 

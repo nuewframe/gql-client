@@ -6,6 +6,7 @@ import { executeCommand } from './commands/execute.ts';
 import { listCommand } from './commands/list.ts';
 import { configCommand } from './commands/config.ts';
 import { authCommand } from './commands/auth.ts';
+import { validateCommand } from './commands/validate.ts';
 
 const mainCommand = new Command()
   .name('gql-client')
@@ -15,7 +16,8 @@ const mainCommand = new Command()
   .command('execute', executeCommand)
   .command('list', listCommand)
   .command('config', configCommand)
-  .command('auth', authCommand);
+  .command('auth', authCommand)
+  .command('validate', validateCommand);
 
 export { mainCommand };
 

@@ -19,14 +19,34 @@ export interface GqlParseOptions {
   allowCommandSubstitution?: boolean;
 }
 
+export interface HttpFileIssue {
+  severity: 'error' | 'warning';
+  line?: number;
+  message: string;
+}
+
+export interface ValidationResult {
+  file: string;
+  errors: number;
+  warnings: number;
+  issues: HttpFileIssue[];
+}
+
+/**
+ * Regex for splitting on `###` separator lines.
+ * Allows optional trailing whitespace or comments after `###`.
+ * Uses [ \t] instead of \s to avoid matching newlines.
+ */
+const SEPARATOR_RE = /^###(?:[ \t].*)?$/m;
+
 export async function loadGqlFile(
   filePath: string,
   options: GqlParseOptions = {},
 ): Promise<ParsedGqlFile> {
   const content = await Deno.readTextFile(filePath);
-  const sections = content.split(/^###$/m);
+  const sections = content.split(SEPARATOR_RE);
 
-  // Parse variables from the first section
+  // Parse variables from the preamble (before the first ### separator)
   const fileVariables: Record<string, string> = {};
   if (sections[0]) {
     const varLines = sections[0].split('\n');
@@ -276,4 +296,117 @@ function cleanGraphQLQuery(query: string): string {
   }
 
   return result;
+}
+
+/**
+ * Validate an .http file and return a list of issues.
+ * Useful for diagnosing why the parser finds no requests.
+ */
+export function validateHttpFile(content: string): HttpFileIssue[] {
+  const issues: HttpFileIssue[] = [];
+  const lines = content.split('\n');
+
+  // ── Check for ### separators ──
+  const hasSeparator = lines.some((l) => SEPARATOR_RE.test(l));
+
+  if (!hasSeparator) {
+    issues.push({
+      severity: 'error',
+      message:
+        'No request separators (###) found. Each request must be preceded by "###" on its own line.',
+    });
+
+    // Look for near-miss separator lines (e.g. ####, ## #, # ##)
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (/^#{2,}$/.test(trimmed) && trimmed !== '###') {
+        issues.push({
+          severity: 'warning',
+          line: i + 1,
+          message: `"${trimmed}" looks like a separator but must be exactly "###".`,
+        });
+      }
+    }
+  }
+
+  // ── Detect ### used as a comment prefix (e.g. "### @TOKEN: ...") ──
+  // "###" is a request separator, not a comment. Comments use "#".
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (/^###\s+@\w+\s*:/.test(trimmed)) {
+      issues.push({
+        severity: 'error',
+        line: i + 1,
+        message:
+          `"###" is a request separator, not a comment. To comment out a line, use "#" instead (e.g. "# ${trimmed.slice(4)}").`,
+      });
+    }
+  }
+
+  // ── Analyse request sections ──
+  const sections = content.split(SEPARATOR_RE);
+  const requestSectionCount = sections.length - 1;
+
+  // Collect defined @VAR names from the preamble
+  const definedVars = new Set<string>();
+  if (sections[0]) {
+    for (const line of sections[0].split('\n')) {
+      const m = line.trim().match(/^@(\w+)\s*:/);
+      if (m) definedVars.add(m[1]);
+    }
+  }
+
+  if (hasSeparator && requestSectionCount === 0) {
+    issues.push({
+      severity: 'error',
+      message: 'File contains ### separators but no request sections after them.',
+    });
+  }
+
+  // Walk each request section
+  for (let i = 1; i < sections.length; i++) {
+    const section = sections[i].trim();
+
+    if (!section) {
+      issues.push({
+        severity: 'warning',
+        message: `Request section ${i} is empty (nothing after ### separator).`,
+      });
+      continue;
+    }
+
+    const hasMethod = /^(GET|POST|PUT|DELETE|PATCH)\s+/im.test(section);
+    if (!hasMethod) {
+      issues.push({
+        severity: 'warning',
+        message:
+          `Request section ${i} has no HTTP method line (e.g. POST https://... HTTP/1.1).`,
+      });
+    }
+
+    const hasBody = /\b(query|mutation)\b/.test(section);
+    if (!hasBody) {
+      issues.push({
+        severity: 'warning',
+        message: `Request section ${i} has no GraphQL query or mutation body.`,
+      });
+    }
+  }
+
+  // ── Check for undefined variable references (skip command substitutions) ──
+  const varRefRe = /\{\{\s*(\w+)\s*\}\}/g;
+  let refMatch;
+  while ((refMatch = varRefRe.exec(content)) !== null) {
+    const varName = refMatch[1];
+    if (!definedVars.has(varName)) {
+      const lineNum = content.substring(0, refMatch.index).split('\n').length;
+      issues.push({
+        severity: 'warning',
+        line: lineNum,
+        message: `Variable "{{ ${varName} }}" is referenced but not defined with @${varName}.`,
+      });
+    }
+  }
+
+  return issues;
 }

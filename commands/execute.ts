@@ -1,10 +1,12 @@
 import { Command } from '@cliffy/command';
 import { GraphQLClient } from 'graphql-request';
-import { basename, dirname, fromFileUrl, isAbsolute, resolve } from '@std/path';
+import { basename, dirname, fromFileUrl, isAbsolute, relative, resolve } from '@std/path';
 import { stringify as yamlStringify } from '@std/yaml';
 import { loadCredentials } from './auth.ts';
 import { loadGqlFile } from '../utils/gql-parser.ts';
 import type { ParsedGqlFile } from '../utils/gql-parser.ts';
+import { validateHttpFile } from '../utils/gql-parser.ts';
+import type { ValidationResult } from '../utils/gql-parser.ts';
 import { getConfig } from '../config/config.ts';
 import { Logger } from '../utils/logger.ts';
 
@@ -268,6 +270,18 @@ export const executeCommand = new Command()
 
       if (parsedFile.requests.length === 0) {
         logger.error('No requests found in file');
+        const content = await Deno.readTextFile(resolvedFile);
+        const issues = validateHttpFile(content);
+        if (issues.length > 0) {
+          const relPath = relative(Deno.cwd(), resolvedFile) || resolvedFile;
+          const result: ValidationResult = {
+            file: relPath,
+            errors: issues.filter((i) => i.severity === 'error').length,
+            warnings: issues.filter((i) => i.severity === 'warning').length,
+            issues,
+          };
+          console.error(yamlStringify(result as unknown as Record<string, unknown>));
+        }
         Deno.exit(1);
       }
 
@@ -341,6 +355,21 @@ export const executeCommand = new Command()
           new URL(endpoint as string);
         } catch {
           logger.error(`Invalid endpoint URL: ${endpoint}`);
+          // If the URL contains unresolved placeholders, run the validator for context
+          if (/\{\{.*\}\}/.test(endpoint as string)) {
+            const fileContent = await Deno.readTextFile(resolvedFile);
+            const issues = validateHttpFile(fileContent);
+            if (issues.length > 0) {
+              const relPath = relative(Deno.cwd(), resolvedFile) || resolvedFile;
+              const result: ValidationResult = {
+                file: relPath,
+                errors: issues.filter((i) => i.severity === 'error').length,
+                warnings: issues.filter((i) => i.severity === 'warning').length,
+                issues,
+              };
+              console.error(yamlStringify(result as unknown as Record<string, unknown>));
+            }
+          }
           Deno.exit(1);
         }
 

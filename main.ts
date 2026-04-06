@@ -3,9 +3,7 @@
 import { Command } from '@cliffy/command';
 import denoJson from './deno.json' with { type: 'json' };
 import { executeCommand } from './commands/execute.ts';
-import { listCommand } from './commands/list.ts';
 import { configCommand } from './commands/config.ts';
-import { authCommand } from './commands/auth.ts';
 import { validateCommand } from './commands/validate.ts';
 
 const mainCommand = new Command()
@@ -14,9 +12,7 @@ const mainCommand = new Command()
   .description('GraphQL Client CLI for executing queries and mutations')
   .meta('deno', Deno.version.deno)
   .command('execute', executeCommand)
-  .command('list', listCommand)
   .command('config', configCommand)
-  .command('auth', authCommand)
   .command('validate', validateCommand);
 
 export { mainCommand };

@@ -73,29 +73,6 @@ gql-client execute smoke.http --fail-on-errors --allow-commands
 
 ---
 
-### `list [dir]`
-
-Recursively list all `.http` files in a directory.
-
-```
-gql-client list [dir]
-```
-
-Arguments:
-
-- `[dir]` — Optional. Directory to search. Default: current working directory.
-
-**Output**: One file path per line to stdout.
-
-**Example**:
-
-```bash
-gql-client list queries/
-gql-client list .
-```
-
----
-
 ### `config`
 
 Manage `~/.gql-client/config.json`.
@@ -123,39 +100,6 @@ gql-client config set-env <env>
 ```bash
 gql-client config set-env production
 gql-client config set-env development
-```
-
----
-
-### `auth`
-
-Check or manage okta-client credentials.
-
-#### `auth status`
-
-Show the status of `~/.nuewframe/credential.json`.
-
-```bash
-gql-client auth status
-```
-
-**Output**: Token type, expiry, scope if found; error message if absent.
-
-**Example output**:
-
-```
-✅ Valid credentials found
-🔑 Token type: Bearer
-⏰ Expires in: 3600 seconds
-🎯 Scope: openid profile email
-```
-
-#### `auth clear`
-
-Delete `~/.nuewframe/credential.json`.
-
-```bash
-gql-client auth clear
 ```
 
 ---
@@ -264,12 +208,6 @@ gql-client execute queries.http -n 1 --allow-commands
 
 # List requests in a file
 gql-client execute queries.http --list
-
-# Find all .http files
-gql-client list queries/
-
-# Check auth
-gql-client auth status
 
 # Set default environment
 gql-client config set-env production

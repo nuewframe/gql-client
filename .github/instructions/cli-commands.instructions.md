@@ -52,9 +52,7 @@ const mainCommand = new Command()
 | Command          | File         | Description                                                      |
 | ---------------- | ------------ | ---------------------------------------------------------------- |
 | `execute <file>` | `execute.ts` | Execute one or all requests from a .http file                    |
-| `list [dir]`     | `list.ts`    | List .http files in directory tree                               |
 | `config`         | `config.ts`  | Manage config (subcommands: show, set-env)                       |
-| `auth`           | `auth.ts`    | Check/clear okta-client credentials (subcommands: status, clear) |
 
 ## Output Format Convention
 

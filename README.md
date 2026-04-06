@@ -108,15 +108,6 @@ gql-client execute queries.http --field data.users --allow-commands
 gql-client execute smoke.http --fail-on-errors --allow-commands
 ```
 
-### `list [dir]`
-
-Recursively list all `.http` files in a directory.
-
-```bash
-gql-client list [dir]                 # default: current directory
-gql-client list queries/
-```
-
 ### `config`
 
 Manage `~/.gql-client/config.json`.
@@ -124,15 +115,6 @@ Manage `~/.gql-client/config.json`.
 ```bash
 gql-client config show                # print config as JSON
 gql-client config set-env production  # set default environment
-```
-
-### `auth`
-
-Inspect or remove okta-client credentials.
-
-```bash
-gql-client auth status                # show credential status
-gql-client auth clear                 # remove stored credentials
 ```
 
 ## .http File Format

@@ -1,4 +1,3 @@
-import { Command } from '@cliffy/command';
 import { join } from '@std/path';
 
 export interface Credentials {
@@ -42,37 +41,3 @@ export async function loadCredentials(silent = false): Promise<Credentials | nul
     return null;
   }
 }
-
-export const authCommand = new Command()
-  .description('Manage authentication')
-  .command('status', 'Check authentication status')
-  .action(async () => {
-    const credentials = await loadCredentials();
-    if (credentials) {
-      console.log('✅ Valid credentials found');
-      console.log(`🔑 Token type: ${credentials.token_type}`);
-      console.log(`⏰ Expires in: ${credentials.expires_in} seconds`);
-      console.log(`🎯 Scope: ${credentials.scope}`);
-    } else {
-      console.log('❌ No valid credentials found');
-      console.log("💡 Run 'okta-client login' to authenticate");
-    }
-  })
-  .command('clear', 'Clear stored credentials')
-  .action(async () => {
-    try {
-      const home = Deno.env.get('HOME');
-      if (!home) {
-        console.error('❌ HOME environment variable not set');
-        Deno.exit(1);
-      }
-
-      const credentialPath = `${home}/.nuewframe/credential.json`;
-      await Deno.remove(credentialPath);
-      console.log('✅ Credentials cleared');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('❌ Failed to clear credentials:', message);
-      Deno.exit(1);
-    }
-  });

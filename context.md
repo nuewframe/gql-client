@@ -83,13 +83,8 @@ gql-client execute <file>             Execute all requests in a .http file
   --allow-commands                    Enable {{ $( cmd ) }} substitution
   --verbose                           Enable debug logging
 
-gql-client list [dir]                 List .http files in directory tree
-
 gql-client config show                Show ~/.gql-client/config.json
 gql-client config set-env <env>       Set default environment
-
-gql-client auth status                Show credential file status
-gql-client auth clear                 Remove stored credentials
 ```
 
 ## Output Formats

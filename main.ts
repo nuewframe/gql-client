@@ -2,20 +2,18 @@
 
 import { Command } from '@cliffy/command';
 import denoJson from './deno.json' with { type: 'json' };
-import { executeCommand } from './commands/execute.ts';
-import { listCommand } from './commands/list.ts';
+import { runCommand } from './commands/run.ts';
 import { configCommand } from './commands/config.ts';
-import { authCommand } from './commands/auth.ts';
+import { validateCommand } from './commands/validate.ts';
 
 const mainCommand = new Command()
   .name('gql-client')
   .version(denoJson.version)
   .description('GraphQL Client CLI for executing queries and mutations')
   .meta('deno', Deno.version.deno)
-  .command('execute', executeCommand)
-  .command('list', listCommand)
+  .command('run', runCommand)
   .command('config', configCommand)
-  .command('auth', authCommand);
+  .command('validate', validateCommand);
 
 export { mainCommand };
 

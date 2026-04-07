@@ -8,18 +8,37 @@ from `.http` files. It integrates with `okta-client` by reading tokens from
 
 ## Architecture
 
+The codebase follows a strict layering paradigm: **Capability → Data Structure → Function → Composition → Integration**.
+
+| Layer           | What it defines                               | Examples in this repo                                               |
+| --------------- | --------------------------------------------- | ------------------------------------------------------------------- |
+| **Capability**  | Types and interfaces — what the system can do | `GqlContent`, `ParsedGqlFile`, `RunOutputFormat`                    |
+| **Data**        | Concrete shapes flowing through the pipeline  | Parsed requests, config schemas, result objects                     |
+| **Function**    | Stateless transforms on data structures       | `loadGqlFile()`, `executeCommandTokens()`, `emitOutput()`           |
+| **Composition** | CLI commands that wire functions together     | `commands/run.ts`, `commands/config.ts`                             |
+| **Integration** | Contracts connecting layers and external deps | Shared types, stdout/stderr contract, `~/.nuewframe/` file contract |
+
+Commands are the composition layer — they import types and functions, wire them in the
+`.action()` handler, and route output. They never contain business logic directly.
+
 ```
-main.ts                   ← CLI entry point; registers all commands with Cliffy
+main.ts                        ← CLI entry point; registers commands with Cliffy
 commands/
-  execute.ts              ← Execute one or all requests from a .http file
-  list.ts                 ← List .http files in a directory tree
-  config.ts               ← Manage ~/.gql-client/config.json
-  auth.ts                 ← Check/clear okta-client credentials
-config/
-  config.ts               ← Load/save ~/.gql-client/config.json (JSON)
+  run.ts                       ← Composition: run command wires executor + formatter
+  config.ts                    ← Composition: config management subcommands
+  validate.ts                  ← Composition: .http file validation
+  environment/resolver.ts      ← Function: resolve env variables
+  errors/gql-client-error.ts   ← Capability: error type guard
+  files/resolver.ts            ← Function: resolve .http file path
+  output/formatter.ts          ← Function: serialize results (YAML/JSON)
+  output/field-extractor.ts    ← Function: extract nested fields by dot-path
+  requests/executor.ts         ← Function + Capability: types + run pipeline
+  requests/formatter.ts        ← Function: format request list
+  tokens/substitution.ts       ← Function: execute {{ $( command ) }} tokens
+  validation/validator.ts      ← Function: emit validation diagnostics
 utils/
-  gql-parser.ts           ← Parse JetBrains HTTP Client format .http files
-  logger.ts               ← Logger class (none/info/debug) that writes to stderr
+  gql-parser.ts                ← Capability + Data + Function: types + parser
+  logger.ts                    ← Capability: Logger class (writes to stderr)
 ```
 
 **Integration contract**: reads `~/.nuewframe/credential.json` (written by `okta-client`).
@@ -50,12 +69,12 @@ Enforced by `deno fmt` and `deno lint`. Settings in `deno.json`:
 ### Imports
 
 - JSR and npm packages: declared in `deno.json` `imports` map, used bare
-- Internal: relative with `.ts` extension (`../config/config.ts`)
+- Internal: relative with `.ts` extension (`./config.ts` or `../utils/logger.ts`)
 - Never use `https://` URLs or `jsr:`/`npm:` directly in source files
 
 ### Naming
 
-- Commands: verb or verb-noun (`execute.ts`, `list.ts`)
+- Commands: verb or verb-noun (`run.ts`, `list.ts`)
 - Tests: `<original>_test.ts` (underscore, not dot)
 
 ### Error Handling
@@ -67,12 +86,12 @@ Enforced by `deno fmt` and `deno lint`. Settings in `deno.json`:
 ### Logger
 
 The `Logger` class in `utils/logger.ts` writes all diagnostic lines to **stderr**.
-This is intentional: it allows `gql-client execute ... | jq` pipelines to work
+This is intentional: it allows `gql-client run ... | jq` pipelines to work
 without mixing status lines into the JSON output.
 
 ### Output Formats
 
-The `execute` command supports multiple output formats:
+The `run` command supports multiple output formats:
 
 - `yaml` (default): YAML array of `{query, data}` objects
 - `json` / `pretty`: indented JSON array
@@ -107,7 +126,7 @@ query GetUser($id: ID!) {
 
 ## Config File Location
 
-`~/.gql-client/config.json` — JSON file. Schema:
+`~/.nuewframe/gql-client/config.json` — JSON file. Schema:
 
 ```json
 {

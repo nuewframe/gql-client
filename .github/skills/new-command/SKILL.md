@@ -8,23 +8,64 @@ Use this skill when adding a new CLI subcommand to `gql-client`.
 
 ---
 
-## Checklist
+## Architecture Paradigm
 
-1. [ ] Create `commands/<verb>.ts`
-2. [ ] Export the command as a named `const`
-3. [ ] Register it in `main.ts`
-4. [ ] Add a smoke test in `main_test.ts`
-5. [ ] Add command reference to `README.md`
+Every new command follows the layering order: **Capability → Data → Function → Composition**.
+
+1. **Types first** — define the types/interfaces for inputs and outputs in a domain module
+2. **Functions next** — implement pure functions that transform those types in `commands/<domain>/`
+3. **Compose last** — the command file imports types and functions, wires them in the action handler
+
+The command file is the **composition layer**. It never contains business logic directly.
 
 ---
 
-## Step 1 — Create the Command File
+## Checklist
+
+1. [ ] Define types and functions in `commands/<domain>/` modules
+2. [ ] Create `commands/<verb>.ts` — compose the domain modules
+3. [ ] Export the command as a named `const`
+4. [ ] Register it in `main.ts`
+5. [ ] Add a smoke test in `main_test.ts`
+6. [ ] Add command reference to `README.md`
+
+---
+
+## Step 1 — Define Domain Types and Functions
+
+Before writing the command, create focused modules for the capability.
+
+File: `commands/<domain>/<module>.ts`
+
+```typescript
+// --- Types (capability + data structure) ---
+export interface MyInput {
+  filePath: string;
+  verbose: boolean;
+}
+
+export interface MyResult {
+  data: string;
+}
+
+// --- Function (operates on types above) ---
+export function processInput(input: MyInput): MyResult {
+  // pure transformation — no CLI/IO concerns
+  return { data: 'value' };
+}
+```
+
+## Step 2 — Create the Command File (Composition)
 
 File: `commands/<name>.ts`
+
+The command imports types and functions, composes them in the action handler.
 
 ```typescript
 import { Command } from '@cliffy/command';
 import { Logger, LogLevel } from '../utils/logger.ts';
+import { processInput } from './<domain>/<module>.ts';
+import type { MyInput } from './<domain>/<module>.ts';
 
 export const myCommand = new Command()
   .name('my-command')
@@ -46,8 +87,9 @@ export const myCommand = new Command()
     try {
       logger.info(`Processing: ${file}`);
 
-      // --- implementation here ---
-      const result = { data: 'value' };
+      // Compose domain functions — no business logic here
+      const input: MyInput = { filePath: file, verbose: !!options.verbose };
+      const result = processInput(input);
 
       // Output to stdout
       console.log(JSON.stringify(result, null, 2));
@@ -63,11 +105,11 @@ export const myCommand = new Command()
 
 **Naming conventions:**
 
-- File: verb or verb-noun (`execute.ts`, `list.ts`)
-- Export: camelCase (`executeCommand`, `listCommand`)
+- File: verb or verb-noun (`run.ts`, `list.ts`)
+- Export: camelCase (`runCommand`, `listCommand`)
 - Command name: same as file without `.ts`
 
-## Step 2 — Register in main.ts
+## Step 3 — Register in main.ts
 
 ```typescript
 // In main.ts — add import
@@ -80,7 +122,7 @@ const mainCommand = new Command()
   .command('my-command', myCommand);
 ```
 
-## Step 3 — Global Option Pattern
+## Step 4 — Global Option Pattern
 
 Declare options directly on the command — they are not auto-inherited in Cliffy:
 
@@ -90,7 +132,7 @@ export const myCommand = new Command()
   .option('--verbose', 'Enable verbose output');
 ```
 
-## Step 4 — Smoke Test in main_test.ts
+## Step 5 — Smoke Test in main_test.ts
 
 ```typescript
 Deno.test('my-command subcommand exists', () => {
@@ -100,7 +142,7 @@ Deno.test('my-command subcommand exists', () => {
 });
 ```
 
-## Step 5 — Subcommands Pattern
+## Step 6 — Subcommands Pattern
 
 For commands with sub-operations (like `auth status`, `auth clear`, `config show`):
 

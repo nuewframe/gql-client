@@ -1,8 +1,13 @@
+---
+name: http-files
+description: Guidance for creating, editing, and running .http files with gql-client.
+---
+
 # http-files Skill
 
 ## When to Use
 
-Trigger phrases: "http file", ".http", "gql file", "sample.http", "execute query", "run request", "filter response", "create .http file".
+Trigger phrases: "http file", ".http", "gql file", "sample.http", "run query", "run request", "filter response", "create .http file".
 
 Use this skill when creating, editing, running, or filtering `.http` files in the gql-client workflow.
 
@@ -130,26 +135,26 @@ query ListOrgs {
 ## Executing with gql-client
 
 ```bash
-# Execute all requests (default: yaml output)
-gql-client execute queries.http
+# Run all requests (default: yaml output)
+gql-client run queries.http
 
-# Execute with token substitution enabled
-gql-client execute queries.http --allow-commands
+# Run with token substitution enabled
+gql-client run queries.http --allow-commands
 
-# Execute only the second request
-gql-client execute queries.http -n 2 --allow-commands
+# Run only the second request
+gql-client run queries.http -n 2 --allow-commands
 
 # List all requests without executing
-gql-client execute queries.http --list
+gql-client run queries.http --list
 
 # JSON output
-gql-client execute queries.http -o json --allow-commands
+gql-client run queries.http -o json --allow-commands
 
 # Compact JSON (pipeline-friendly)
-gql-client execute queries.http -o compact --allow-commands
+gql-client run queries.http -o compact --allow-commands
 
 # Pretty output with banners
-gql-client execute queries.http -o pretty --allow-commands
+gql-client run queries.http -o pretty --allow-commands
 ```
 
 ---
@@ -160,18 +165,17 @@ gql-client execute queries.http -o pretty --allow-commands
 
 ```bash
 # Extract a nested field from all results
-gql-client execute queries.http -o yaml --field data.users --allow-commands
+gql-client run queries.http -o yaml --field data.users --allow-commands
 ```
 
-### jq filter (requires --allow-commands)
+### jq filtering (shell pipeline)
 
 ```bash
 # Extract user names from all results
-gql-client execute queries.http -o compact --allow-commands \
-  --select '.[] | .data.users[] | .name'
+gql-client run queries.http -o compact --allow-commands | jq '.[] | .data.users[] | .name'
 
 # Pipe to jq separately
-gql-client execute queries.http -o compact --allow-commands | jq '.[] | .data'
+gql-client run queries.http -o compact --allow-commands | jq '.[] | .data'
 ```
 
 ---
@@ -182,16 +186,16 @@ Because `gql-client` sends diagnostics to stderr and data to stdout, you can pip
 
 ```bash
 # To jq
-gql-client execute users.http -o compact --allow-commands | jq '.[0].data.users'
+gql-client run users.http -o compact --allow-commands | jq '.[0].data.users'
 
 # To yq
-gql-client execute users.http --allow-commands | yq '.[] | .data'
+gql-client run users.http --allow-commands | yq '.[] | .data'
 
 # Save to file
-gql-client execute users.http -o json --allow-commands > results.json
+gql-client run users.http -o json --allow-commands > results.json
 
 # Count results
-gql-client execute users.http -o compact --allow-commands | jq '.[0].data.users | length'
+gql-client run users.http -o compact --allow-commands | jq '.[0].data.users | length'
 ```
 
 ---
@@ -238,7 +242,7 @@ query { __typename }
 Or use `gql-client config` to set a default endpoint, then omit `@HOST_URL`:
 
 ```bash
-gql-client config set-env production
+gql-client config set-default production
 ```
 
 ---
@@ -264,10 +268,10 @@ Add `.env`, but **not** `.http` files, to secrets scanning exclusions. The `.htt
 
 ```bash
 # Exit non-zero if any request returns GraphQL errors
-gql-client execute queries.http --fail-on-errors --allow-commands
+gql-client run queries.http --fail-on-errors --allow-commands
 
 # Use in CI scripts
-if ! gql-client execute smoke-test.http --fail-on-errors --allow-commands; then
+if ! gql-client run smoke-test.http --fail-on-errors --allow-commands; then
   echo "Smoke test failed"
   exit 1
 fi

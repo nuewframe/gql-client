@@ -95,9 +95,9 @@ the CHANGELOG automatically.
 Breaking changes must also include a `BREAKING CHANGE:` footer in the commit body:
 
 ```
-feat!: rename --select flag to --jq
+feat!: rename --request option to --index
 
-BREAKING CHANGE: the --select flag has been renamed to --jq for clarity
+BREAKING CHANGE: the --request option has been renamed to --index for clarity
 ```
 
 > **Tip:** Squash your PR commits so each PR produces one clean conventional commit on `main`.

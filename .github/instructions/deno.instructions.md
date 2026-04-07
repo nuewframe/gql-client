@@ -5,6 +5,26 @@ applyTo: '**/*.ts'
 
 # TypeScript / Deno Conventions
 
+## Architecture Paradigm
+
+All code follows a strict layering order: **Capability → Data Structure → Function → Composition → Integration**.
+
+1. **Capability** — Define _what_ the system can do via TypeScript types and interfaces.
+   Types are declared before any implementation. They are the source of truth.
+2. **Data Structure** — Concrete types that flow through the system (parsed files, configs,
+   results, errors). Data structures implement capabilities.
+3. **Function** — Pure, stateless functions that transform data structures. Each function
+   lives in a focused module under `commands/<domain>/` or `utils/`.
+4. **Composition** — CLI commands (`commands/run.ts`, `commands/config.ts`) compose
+   functions into workflows. A command never contains business logic directly — it wires
+   capability, data, and functions together and exposes them to the user.
+5. **Integration** — Contracts that connect layers: shared types imported across modules,
+   the `ParsedGqlFile → GqlContent[]` pipeline, stdout/stderr output contract, and the
+   `~/.nuewframe/` file-system contract with `okta-client`.
+
+When adding new code, work top-down through these layers. Define the types first, implement
+the functions that operate on them, then compose everything in the command handler.
+
 ## Deno Version Target
 
 Minimum Deno 2.0. Use native Deno APIs and JSR packages.
@@ -35,7 +55,7 @@ import { request } from 'graphql-request';
 // Internal — relative path with .ts extension
 import { parseHttpFile } from '../utils/gql-parser.ts';
 import { Logger } from '../utils/logger.ts';
-import { loadConfig } from '../config/config.ts';
+import { getConfig } from '../commands/config.ts';
 ```
 
 ### Forbidden patterns
@@ -64,14 +84,14 @@ deno cache --vendor main.ts
 
 | Type          | Pattern              | Example                      |
 | ------------- | -------------------- | ---------------------------- |
-| Command       | verb or verb-noun    | `execute.ts`, `list.ts`      |
+| Command       | verb or verb-noun    | `run.ts`, `list.ts`          |
 | Config module | descriptive          | `config.ts`                  |
 | Utility       | descriptive noun     | `gql-parser.ts`, `logger.ts` |
 | Test          | `<original>_test.ts` | `gql-parser_test.ts`         |
 
-## Config File — `~/.gql-client/config.json`
+## Config File — `~/.nuewframe/gql-client/config.json`
 
-Loaded and saved by `config/config.ts`. Schema:
+Loaded and saved by `commands/config.ts`. Schema:
 
 ```json
 {
@@ -88,8 +108,8 @@ Loaded and saved by `config/config.ts`. Schema:
 Load with:
 
 ```typescript
-import { loadConfig, saveConfig } from '../config/config.ts';
-const config = await loadConfig(); // returns null if file missing
+import { getConfig, saveConfig } from '../commands/config.ts';
+const config = getConfig(); // returns {} if file missing
 ```
 
 ## Credential File — `~/.nuewframe/credential.json`
@@ -126,7 +146,7 @@ Grant `--allow-run` only when the user explicitly passes `--allow-commands` flag
 try {
   // implementation
 } catch (error) {
-  console.error('❌ execute failed:', error instanceof Error ? error.message : String(error));
+  console.error('❌ run failed:', error instanceof Error ? error.message : String(error));
   Deno.exit(1);
 }
 ```
@@ -144,7 +164,7 @@ if (!endpoint) {
 The `Logger` class in `utils/logger.ts` writes **only to stderr**. This is intentional — stdout is reserved for program data so pipelines work:
 
 ```bash
-gql-client execute query.http -o compact | jq '.[] | .data'
+gql-client run query.http -o compact | jq '.[] | .data'
 ```
 
 ```typescript
@@ -188,5 +208,5 @@ await Deno.writeTextFile(configPath, JSON.stringify(data, null, 2));
 ```typescript
 const home = Deno.env.get('HOME') ?? Deno.env.get('USERPROFILE') ?? '.';
 const credentialPath = resolve(home, '.nuewframe', 'credential.json');
-const configDir = resolve(home, '.gql-client');
+const configDir = resolve(home, '.nuewframe', 'gql-client');
 ```

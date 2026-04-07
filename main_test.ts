@@ -2,12 +2,11 @@ import { assert, assertEquals, assertExists } from '@std/assert';
 
 import denoJson from './deno.json' with { type: 'json' };
 import { mainCommand } from './main.ts';
-import { executeCommand } from './commands/execute.ts';
-import { listCommand } from './commands/list.ts';
+import { runCommand } from './commands/run.ts';
 import { configCommand } from './commands/config.ts';
-import { authCommand } from './commands/auth.ts';
+import { validateCommand } from './commands/validate.ts';
 import { Logger } from './utils/logger.ts';
-import { getConfig, saveConfig } from './config/config.ts';
+import { getConfig, saveConfig } from './commands/config.ts';
 import { loadGqlFile } from './utils/gql-parser.ts';
 
 Deno.test('GQL CLI - main module file exists', async () => {
@@ -24,17 +23,15 @@ Deno.test('GQL CLI - main command metadata is set', () => {
 });
 
 Deno.test('GQL CLI - top-level commands are registered', () => {
-  assertExists(mainCommand.getCommand('execute'));
-  assertExists(mainCommand.getCommand('list'));
+  assertExists(mainCommand.getCommand('run'));
   assertExists(mainCommand.getCommand('config'));
-  assertExists(mainCommand.getCommand('auth'));
+  assertExists(mainCommand.getCommand('validate'));
 });
 
 Deno.test('GQL CLI - command exports are defined', () => {
-  assertExists(executeCommand);
-  assertExists(listCommand);
+  assertExists(runCommand);
   assertExists(configCommand);
-  assertExists(authCommand);
+  assertExists(validateCommand);
 });
 
 Deno.test('GQL CLI - utility exports are available', () => {

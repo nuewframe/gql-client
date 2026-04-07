@@ -88,10 +88,10 @@ Deno.test('main command is registered', () => {
   assertEquals(mainCommand.getName(), 'gql-client');
 });
 
-Deno.test('execute subcommand exists', () => {
-  const cmd = mainCommand.getCommand('execute');
+Deno.test('run subcommand exists', () => {
+  const cmd = mainCommand.getCommand('run');
   assertExists(cmd);
-  assertEquals(cmd.getName(), 'execute');
+  assertEquals(cmd.getName(), 'run');
 });
 
 Deno.test('list subcommand exists', () => {
@@ -146,7 +146,7 @@ deno test --filter "parser"  # filter by name pattern
 
 ## Test Isolation
 
-- Never depend on real `~/.nuewframe/credential.json` or `~/.gql-client/config.json`
+- Never depend on real `~/.nuewframe/credential.json` or `~/.nuewframe/gql-client/config.json`
 - Use inline strings for `.http` file content — don't read actual files on disk
 - Clean up any temp files in `try/finally`
 - Don't rely on network access in unit tests

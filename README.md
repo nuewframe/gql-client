@@ -238,7 +238,7 @@ Within an organization peer certificate may cause an `UnknownIssuer` error.
 ❌ Execution failed: error sending request for url (https://dev.domain.io): client error (Connect): invalid peer certificate: UnknownIssuer
 ```
 
-Direct TLS CA Store to `System`. 
+Direct TLS CA Store to `System`.
 
 ```bash
 export DENO_TLS_CA_STORE=system

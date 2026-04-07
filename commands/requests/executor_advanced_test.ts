@@ -322,4 +322,3 @@ query Test { test }
     await Deno.remove(file);
   }
 });
-

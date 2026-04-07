@@ -54,7 +54,7 @@ query GetUser {
   try {
     Deno.exit = mockExit as typeof Deno.exit;
     Deno.cwd = () => '/test';
-    Deno.readTextFile = async () => validHttpContent;
+    Deno.readTextFile = () => Promise.resolve(validHttpContent);
 
     const captured = await captureConsole(async () => {
       await validateAction({ logLevel: 'info' }, 'test.http');
@@ -92,7 +92,7 @@ query GetUser {
   try {
     Deno.exit = mockExit as typeof Deno.exit;
     Deno.cwd = () => '/test';
-    Deno.readTextFile = async () => validHttpContent;
+    Deno.readTextFile = () => Promise.resolve(validHttpContent);
 
     const captured = await captureConsole(async () => {
       await validateAction({ logLevel: 'info' }, 'test.http');
@@ -127,7 +127,7 @@ query GetUser {
   try {
     Deno.exit = mockExit as typeof Deno.exit;
     Deno.cwd = () => '/test';
-    Deno.readTextFile = async () => httpWithErrors;
+    Deno.readTextFile = () => Promise.resolve(httpWithErrors);
 
     let exited = false;
     await captureConsole(async () => {
@@ -161,9 +161,7 @@ Deno.test('validate command: file not found error', async () => {
   try {
     Deno.exit = mockExit as typeof Deno.exit;
     Deno.cwd = () => '/test';
-    Deno.readTextFile = async () => {
-      throw new Error('ENOENT: no such file or directory');
-    };
+    Deno.readTextFile = () => Promise.reject(new Error('ENOENT: no such file or directory'));
 
     let exited = false;
     const captured = await captureConsole(async () => {
@@ -207,7 +205,7 @@ query GetUser {
   try {
     Deno.exit = mockExit as typeof Deno.exit;
     Deno.cwd = () => '/test';
-    Deno.readTextFile = async () => validHttpContent;
+    Deno.readTextFile = () => Promise.resolve(validHttpContent);
 
     await captureConsole(async () => {
       await validateAction({ logLevel: 'invalid' as never }, 'test.http');
@@ -240,7 +238,7 @@ query GetUser {
   try {
     Deno.exit = mockExit as typeof Deno.exit;
     Deno.cwd = () => '/workspace';
-    Deno.readTextFile = async () => validHttpContent;
+    Deno.readTextFile = () => Promise.resolve(validHttpContent);
 
     const captured = await captureConsole(async () => {
       await validateAction({ logLevel: 'info' }, 'requests/test.http');

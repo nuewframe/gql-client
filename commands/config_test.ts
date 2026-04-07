@@ -1,12 +1,11 @@
 import { assertEquals, assertRejects } from '@std/assert';
 import {
-  DEFAULT_CONFIG_DIR,
-  DEFAULT_CONFIG_PATH,
   configExists,
+  DEFAULT_CONFIG_PATH,
   getConfig,
+  type GqlConfig,
   resolveConfigPath,
   saveConfig,
-  type GqlConfig,
 } from './config.ts';
 
 Deno.test('config: resolveConfigPath with default', () => {

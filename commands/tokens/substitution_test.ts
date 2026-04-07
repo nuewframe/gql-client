@@ -41,22 +41,24 @@ Deno.test('tokens: executeCommandTokens empty command result', () => {
   assertEquals(result, 'prefixsuffix');
 });
 
-  Deno.test('tokens: executeCommandTokens at start of string', () => {
-    const result = executeCommandTokens('{{ $( echo "start" ) }} rest');
-    assertEquals(result, 'start rest');
-  });
+Deno.test('tokens: executeCommandTokens at start of string', () => {
+  const result = executeCommandTokens('{{ $( echo "start" ) }} rest');
+  assertEquals(result, 'start rest');
+});
 
-  Deno.test('tokens: executeCommandTokens at end of string', () => {
-    const result = executeCommandTokens('prefix {{ $( echo "end" ) }}');
-    assertEquals(result, 'prefix end');
-  });
+Deno.test('tokens: executeCommandTokens at end of string', () => {
+  const result = executeCommandTokens('prefix {{ $( echo "end" ) }}');
+  assertEquals(result, 'prefix end');
+});
 
-  Deno.test('tokens: executeCommandTokens with multiline output', () => {
-    const result = executeCommandTokens('{{ $( printf "line1\\nline2" ) }}');
-    assertEquals(typeof result, 'string');
-  });
+Deno.test('tokens: executeCommandTokens with multiline output', () => {
+  const result = executeCommandTokens('{{ $( printf "line1\\nline2" ) }}');
+  assertEquals(typeof result, 'string');
+});
 Deno.test('tokens: executeCommandTokens preserves failed token in multi-token', () => {
-  const result = executeCommandTokens('{{ $( echo "first" ) }} {{ $( false ) }} {{ $( echo "third" ) }}');
+  const result = executeCommandTokens(
+    '{{ $( echo "first" ) }} {{ $( false ) }} {{ $( echo "third" ) }}',
+  );
   assertEquals(result, 'first {{ $( false ) }} third');
 });
 
@@ -71,4 +73,3 @@ Deno.test('tokens: executeCommandTokens with special shell characters', () => {
   const result = executeCommandTokens('{{ $( echo "test & test" ) }}');
   assertEquals(result, 'test & test');
 });
-

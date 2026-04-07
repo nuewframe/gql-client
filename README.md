@@ -229,6 +229,21 @@ deno task fmt                 # deno fmt
 deno task build:all           # compile all platform binaries
 ```
 
+## Troubleshoot
+
+Within an organization peer certificate may cause an `UnknownIssuer` error.
+
+```bash
+> gql-client run ./query.http --allow-commands
+❌ Execution failed: error sending request for url (https://dev.domain.io): client error (Connect): invalid peer certificate: UnknownIssuer
+```
+
+Direct TLS CA Store to `System`. 
+
+```bash
+export DENO_TLS_CA_STORE=system
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).

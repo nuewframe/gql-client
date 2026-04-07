@@ -15,10 +15,10 @@ main.ts                    CLI entry point; registers all commands with Cliffy
 commands/
   execute.ts               Execute one or all requests from a .http file
   list.ts                  Recursively list .http files in a directory
-  config.ts                Manage ~/.gql-client/config.json (show/set-env)
+  config.ts                Manage ~/.nuewframe/gql-client/config.json (show)
   auth.ts                  Check/clear okta-client credentials (status/clear)
 config/
-  config.ts                Load/save ~/.gql-client/config.json, type definitions
+  config.ts                Load/save ~/.nuewframe/gql-client/config.json, type definitions
 utils/
   gql-parser.ts            Parse JetBrains HTTP Client format .http files
   logger.ts                Logger class (none/info/debug) → stderr ONLY
@@ -35,7 +35,7 @@ that takes precedence.
 
 ## Config File
 
-Location: `~/.gql-client/config.json`
+Location: `~/.nuewframe/gql-client/config.json`
 
 ```json
 {
@@ -62,13 +62,13 @@ Key elements:
 
 ## Key Files
 
-| File                  | Role                                                                 |
-| --------------------- | -------------------------------------------------------------------- |
-| `deno.json`           | Package manifest: `@nuewframe/gql-client` v1.0.1, imports map, tasks |
-| `main.ts`             | Export `mainCommand`; entry point when `import.meta.main`            |
-| `commands/execute.ts` | Core command: parse → resolve variables → execute → format → print   |
-| `utils/gql-parser.ts` | `parseHttpFile()`, `resolveVariables()`, `parseRequests()`           |
-| `commands/config.ts`  | `getConfig()`, `saveConfig()` for `~/.gql-client/config.json`        |
+| File                  | Role                                                                    |
+| --------------------- | ----------------------------------------------------------------------- |
+| `deno.json`           | Package manifest: `@nuewframe/gql-client` v1.0.1, imports map, tasks    |
+| `main.ts`             | Export `mainCommand`; entry point when `import.meta.main`               |
+| `commands/execute.ts` | Core command: parse → resolve variables → execute → format → print      |
+| `utils/gql-parser.ts` | `parseHttpFile()`, `resolveVariables()`, `parseRequests()`              |
+| `commands/config.ts`  | `getConfig()`, `saveConfig()` for `~/.nuewframe/gql-client/config.json` |
 
 ## Command Surface Summary
 
@@ -83,7 +83,7 @@ gql-client execute <file>             Execute all requests in a .http file
   --allow-commands                    Enable {{ $( cmd ) }} substitution
   --verbose                           Enable debug logging
 
-gql-client config show                Show ~/.gql-client/config.json
+gql-client config show                Show ~/.nuewframe/gql-client/config.json
 gql-client config set-env <env>       Set default environment
 ```
 

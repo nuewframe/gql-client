@@ -1,22 +1,15 @@
 import { Command } from '@cliffy/command';
 import { join } from '@std/path';
+import { stringify as yamlStringify } from '@std/yaml';
 
-export interface GqlConfig {
-  defaultEnv?: string;
-  environments?: Record<
-    string,
-    {
-      endpoint?: string;
-      headers?: Record<string, string>;
-    }
-  >;
-}
+export type GqlConfig = Record<string, never>;
 
-const CONFIG_PATH = join(Deno.env.get('HOME') || '.', '.gql-client', 'config.json');
+const CONFIG_DIR = join(Deno.env.get('HOME') || '.', '.nuewframe', 'gql-client');
+const CONFIG_PATH = join(CONFIG_DIR, 'config.json');
 
-export function getConfig(): GqlConfig {
+export async function getConfig(): Promise<GqlConfig> {
   try {
-    const content = Deno.readTextFileSync(CONFIG_PATH);
+    const content = await Deno.readTextFile(CONFIG_PATH);
     return JSON.parse(content);
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
@@ -30,25 +23,30 @@ export function getConfig(): GqlConfig {
   }
 }
 
-export function saveConfig(config: GqlConfig): void {
-  const dir = join(Deno.env.get('HOME') || '.', '.gql-client');
-  Deno.mkdirSync(dir, { recursive: true });
-  Deno.writeTextFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+export async function saveConfig(config: GqlConfig): Promise<void> {
+  await Deno.mkdir(CONFIG_DIR, { recursive: true });
+  await Deno.writeTextFile(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 
 export const configCommand = new Command()
-  .description('Manage gql-client configuration')
-  .command('show', 'Show current configuration')
-  .action(() => {
-    const config = getConfig();
-    console.log('🔧 Current configuration:');
-    console.log(JSON.stringify(config, null, 2));
-  })
-  .command('set-env', 'Set default environment')
-  .arguments('<env:string>')
-  .action((_options, env) => {
-    const config = getConfig();
-    config.defaultEnv = env;
-    saveConfig(config);
-    console.log(`✅ Default environment set to: ${env}`);
+  .description('Manage gql-client configuration');
+
+configCommand
+  .command('show')
+  .description('Show current configuration')
+  .option(
+    '-o, --output <format:string>',
+    'Output format: yaml (default), json, compact',
+    { default: 'yaml' },
+  )
+  .action(async (options) => {
+    const config = await getConfig();
+    const fmt = options.output as 'yaml' | 'json' | 'compact';
+    if (fmt === 'json') {
+      console.log(JSON.stringify(config, null, 2));
+    } else if (fmt === 'compact') {
+      console.log(JSON.stringify(config));
+    } else {
+      console.log(yamlStringify(config as unknown as Record<string, unknown>));
+    }
   });

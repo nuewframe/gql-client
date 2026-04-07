@@ -2,11 +2,11 @@ import { assertEquals, assertExists } from '@std/assert';
 import { loadGqlFile, validateHttpFile } from './gql-parser.ts';
 
 /** Write a temp .http file, parse it, then clean up. */
-async function parseHttp(content: string, allowCommandSubstitution = false) {
+async function parseHttp(content: string, extraVariables?: Record<string, string>) {
   const tmpFile = await Deno.makeTempFile({ suffix: '.http' });
   await Deno.writeTextFile(tmpFile, content);
   try {
-    return await loadGqlFile(tmpFile, { allowCommandSubstitution });
+    return await loadGqlFile(tmpFile, { extraVariables });
   } finally {
     await Deno.remove(tmpFile);
   }
@@ -72,7 +72,9 @@ query Q {
   assertEquals(parsed.endpoint, 'https://api.example.com');
 });
 
-Deno.test('GqlParser - command substitution in @TOKEN variable executes and resolves in header', async () => {
+Deno.test('GqlParser - command substitution token is always preserved as literal by parser', async () => {
+  // The parser leaves {{ $(...) }} tokens untouched regardless of options.
+  // Actual command execution is the execute command\'s responsibility.
   const content = `@TOKEN:{{$(echo test-token)}}
 
 ###
@@ -84,9 +86,10 @@ query Q {
   ping
 }
 `;
-  const parsed = await parseHttp(content, true);
+  const parsed = await parseHttp(content);
   assertExists(parsed.requests[0]);
-  assertEquals(parsed.requests[0].headers?.['Authorization'], 'Bearer test-token');
+  // TOKEN was substituted to its raw value, but $(...) is left as literal
+  assertEquals(parsed.requests[0].headers?.['Authorization'], 'Bearer {{$(echo test-token)}}');
 });
 
 Deno.test('GqlParser - headers with Bearer token and URL variable both resolve correctly', async () => {
@@ -108,7 +111,7 @@ query EndpointPing {
   }
 }
 `;
-  const parsed = await parseHttp(content, true);
+  const parsed = await parseHttp(content);
 
   // Variables
   assertEquals(parsed.variables['HOST_URL'], 'https://gateway.example.com/api');
@@ -116,15 +119,19 @@ query EndpointPing {
   // Endpoint resolved from variable
   assertEquals(parsed.endpoint, 'https://gateway.example.com/api');
 
-  // Request present and headers resolved
+  // Request present and headers resolved — but command token is still literal
   assertExists(parsed.requests[0]);
-  assertEquals(parsed.requests[0].headers?.['Authorization'], 'Bearer my-access-token');
+  assertEquals(
+    parsed.requests[0].headers?.['Authorization'],
+    'Bearer {{$(echo my-access-token)}}',
+  );
   assertEquals(parsed.requests[0].headers?.['Content-Type'], 'application/json');
   assertEquals(parsed.requests[0].type, 'query');
   assertEquals(parsed.requests[0].name, 'EndpointPing');
 });
 
 Deno.test('GqlParser - command substitution remains literal when not explicitly enabled', async () => {
+  // Kept for backwards compat: confirms literal behaviour when there is no allowCommands flag.
   const content = `@TOKEN:{{$(echo test-token)}}
 
 ###
@@ -136,9 +143,57 @@ query Q {
   ping
 }
 `;
-  const parsed = await parseHttp(content, false);
+  const parsed = await parseHttp(content);
   assertExists(parsed.requests[0]);
   assertEquals(parsed.requests[0].headers?.['Authorization'], 'Bearer {{$(echo test-token)}}');
+});
+
+Deno.test('GqlParser - inline variables override env file variables', async () => {
+  const content = `@HOST_URL: https://inline.example.com/graphql
+@TOKEN:inline-token
+
+###
+POST {{HOST_URL}} HTTP/1.1
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+query Q {
+  ping
+}
+`;
+
+  const parsed = await parseHttp(content, {
+    HOST_URL: 'https://env.example.com/graphql',
+    TOKEN: 'env-token',
+    UNUSED: 'still-allowed',
+  });
+
+  assertEquals(parsed.variables['HOST_URL'], 'https://inline.example.com/graphql');
+  assertEquals(parsed.variables['TOKEN'], 'inline-token');
+  assertEquals(parsed.variables['UNUSED'], 'still-allowed');
+  assertEquals(parsed.endpoint, 'https://inline.example.com/graphql');
+  assertEquals(parsed.requests[0].headers?.['Authorization'], 'Bearer inline-token');
+});
+
+Deno.test('GqlParser - JSON variables parse from correct position when lines repeat', async () => {
+  // Regression test for lines.indexOf(line) bug:
+  // if multiple lines share the same content, indexOf returned the first occurrence
+  // instead of the actual current position, corrupting variable extraction.
+  const content = `###
+POST https://api.example.com/graphql HTTP/1.1
+Content-Type: application/json
+
+query GetUser($id: ID!) {
+  user(id: $id) { id name }
+}
+
+{
+  "id": "123"
+}
+`;
+  const parsed = await parseHttp(content);
+  assertEquals(parsed.requests.length, 1);
+  assertEquals(parsed.requests[0].variables, { id: '123' });
 });
 
 // ── Separator tolerance tests ──

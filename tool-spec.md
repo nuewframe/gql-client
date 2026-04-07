@@ -75,7 +75,7 @@ gql-client execute smoke.http --fail-on-errors --allow-commands
 
 ### `config`
 
-Manage `~/.gql-client/config.json`.
+Manage `~/.nuewframe/gql-client/config.json`.
 
 #### `config show`
 
@@ -135,7 +135,7 @@ See `.github/instructions/gql-files.instructions.md` for the full format spec.
 
 ## Config File Schema
 
-`~/.gql-client/config.json`:
+`~/.nuewframe/gql-client/config.json`:
 
 ```json
 {

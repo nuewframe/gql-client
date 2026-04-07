@@ -12,7 +12,7 @@ from `.http` files. It integrates with `okta-client` by reading tokens from
 main.ts                   ← CLI entry point; registers all commands with Cliffy
 commands/
   execute.ts              ← Execute one or all requests from a .http file
-  config.ts               ← Manage and load/save ~/.gql-client/config.json
+  config.ts               ← Manage and load/save ~/.nuewframe/gql-client/config.json
   auth.ts                 ← Credential loading used by execute
 utils/
   gql-parser.ts           ← Parse JetBrains HTTP Client format .http files
@@ -104,7 +104,7 @@ query GetUser($id: ID!) {
 
 ## Config File Location
 
-`~/.gql-client/config.json` — JSON file. Schema:
+`~/.nuewframe/gql-client/config.json` — JSON file. Schema:
 
 ```json
 {

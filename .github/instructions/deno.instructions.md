@@ -69,7 +69,7 @@ deno cache --vendor main.ts
 | Utility       | descriptive noun     | `gql-parser.ts`, `logger.ts` |
 | Test          | `<original>_test.ts` | `gql-parser_test.ts`         |
 
-## Config File — `~/.gql-client/config.json`
+## Config File — `~/.nuewframe/gql-client/config.json`
 
 Loaded and saved by `commands/config.ts`. Schema:
 
@@ -188,5 +188,5 @@ await Deno.writeTextFile(configPath, JSON.stringify(data, null, 2));
 ```typescript
 const home = Deno.env.get('HOME') ?? Deno.env.get('USERPROFILE') ?? '.';
 const credentialPath = resolve(home, '.nuewframe', 'credential.json');
-const configDir = resolve(home, '.gql-client');
+const configDir = resolve(home, '.nuewframe', 'gql-client');
 ```

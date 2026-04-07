@@ -1,22 +1,10 @@
 import { Command } from '@cliffy/command';
 import { GraphQLClient } from 'graphql-request';
-import { basename, dirname, fromFileUrl, isAbsolute, relative, resolve } from '@std/path';
+import { basename, isAbsolute, relative, resolve } from '@std/path';
 import { stringify as yamlStringify } from '@std/yaml';
-import { loadCredentials } from './auth.ts';
 import { loadGqlFile, validateHttpFile } from '../utils/gql-parser.ts';
 import type { ParsedGqlFile, ValidationResult } from '../utils/gql-parser.ts';
-import { getConfig } from './config.ts';
 import { Logger } from '../utils/logger.ts';
-
-function normalizeAccessToken(token?: string): string | undefined {
-  if (!token) {
-    return token;
-  }
-
-  const trimmed = token.trim();
-  const bearerMatch = /^Bearer\s+(.+)$/i.exec(trimmed);
-  return bearerMatch ? bearerMatch[1].trim() : trimmed;
-}
 
 /** Run the validator on a file and write structured YAML diagnostics to stderr. */
 async function emitValidationDiagnostics(filePath: string): Promise<void> {
@@ -33,42 +21,61 @@ async function emitValidationDiagnostics(filePath: string): Promise<void> {
   console.error(yamlStringify(result as unknown as Record<string, unknown>));
 }
 
-function resolveAuthPlaceholders(value: string, accessToken?: string, idToken?: string): string {
-  const normalizedAccessToken = normalizeAccessToken(accessToken);
-
-  return value
-    .replace(/\{\{TOKEN\}\}/g, normalizedAccessToken || '{{TOKEN}}')
-    .replace(/\{\{ACCESS_TOKEN\}\}/g, normalizedAccessToken || '{{ACCESS_TOKEN}}')
-    .replace(/\{\{ID_TOKEN\}\}/g, idToken || '{{ID_TOKEN}}');
+/** Resolve a file argument to an absolute path from the caller's cwd. */
+async function resolveFilePath(file: string): Promise<string> {
+  const resolved = isAbsolute(file) ? file : resolve(Deno.cwd(), file);
+  try {
+    const stat = await Deno.stat(resolved);
+    if (stat.isFile) return resolved;
+  } catch { /* fall through */ }
+  throw new Error(`File not found: ${resolved}`);
 }
 
-/**
- * Resolve file arguments robustly for both absolute and relative paths.
- *
- * Relative path handling strategy:
- * 1) current process CWD (standard usage from any working directory)
- * 2) repo root relative to this file (src: commands/ → ../ = repo root)
- */
-async function resolveFilePath(file: string): Promise<string> {
-  const candidates = isAbsolute(file) ? [file] : [
-    resolve(Deno.cwd(), file),
-    resolve(dirname(fromFileUrl(import.meta.url)), '..', file),
-  ];
-
-  for (const candidate of candidates) {
+/** Resolve {{ $(...) }} command substitution tokens in a string. */
+export function executeCommandTokens(text: string): string {
+  return text.replace(/\{\{\s*\$\(([^)]+)\)\s*\}\}/g, (match, cmd) => {
     try {
-      const stat = await Deno.stat(candidate);
-      if (stat.isFile) {
-        return candidate;
-      }
+      // WARNING: executes shell commands from .http files.
+      // Only called when --allow-commands is explicitly passed by the user.
+      const result = new Deno.Command('sh', {
+        args: ['-c', cmd.trim()],
+        stdout: 'piped',
+        stderr: 'piped',
+      }).outputSync();
+      return result.success ? new TextDecoder().decode(result.stdout).trim() : match;
     } catch {
-      // Try the next candidate.
+      return match;
     }
-  }
+  });
+}
 
-  throw new Error(
-    `File not found: ${file}. Checked: ${candidates.join(', ')}`,
-  );
+/** Parse a KEY=value env file into a variables map.
+ * Supports $VAR / ${VAR} system env substitution and {{ $(...) }} command tokens
+ * (the latter only when allowCommands is true). */
+export async function loadEnvFile(
+  filePath: string,
+  allowCommands: boolean,
+): Promise<Record<string, string>> {
+  const content = await Deno.readTextFile(filePath);
+  const result: Record<string, string> = {};
+  for (const raw of content.split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eqIdx = line.indexOf('=');
+    if (eqIdx < 1) continue;
+    const key = line.slice(0, eqIdx).trim();
+    let value = line.slice(eqIdx + 1).trim();
+    // Resolve $VAR and ${VAR} system env references.
+    value = value.replace(/\$\{([^}]+)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g, (_, braced, bare) => {
+      return Deno.env.get(braced ?? bare) ?? '';
+    });
+    // Resolve {{ $(...) }} command tokens if allowed.
+    if (allowCommands) {
+      value = executeCommandTokens(value);
+    }
+    result[key] = value;
+  }
+  return result;
 }
 
 function listRequests(
@@ -223,9 +230,11 @@ export const executeCommand = new Command()
   .arguments('<file:string>')
   .option('-e, --endpoint <endpoint:string>', 'GraphQL endpoint URL')
   .option('-v, --variables <variables:string>', 'JSON string of variables')
-  .option('--env <env:string>', 'Environment to use')
-  .option('--skip-auth', 'Skip authentication')
-  .option('--allow-commands', 'Allow {{$(...)}} command substitution from query files')
+  .option(
+    '--env <file:string>',
+    'Path to a KEY=value env file; variables are available for {{ }} substitution in the .http file',
+  )
+  .option('--allow-commands', 'Allow {{$(...)}} command substitution from query files and env file')
   .option(
     '-o, --output <format:string>',
     'Output format: yaml (default), json/pretty (indented JSON), compact (single-line JSON), table (text table)',
@@ -273,13 +282,36 @@ export const executeCommand = new Command()
     const logger = new Logger(effectiveLogLevel);
 
     try {
-      const config = getConfig();
-      const _env = options.env || config.defaultEnv || 'default';
+      // Load env file variables if --env was provided.
+      // Command tokens resolved here (before parser sees the values).
+      const envVars: Record<string, string> = {};
+      if (options.env) {
+        const resolvedEnvFile = isAbsolute(options.env)
+          ? options.env
+          : resolve(Deno.cwd(), options.env);
+        Object.assign(envVars, await loadEnvFile(resolvedEnvFile, options.allowCommands ?? false));
+        logger.debug(`Loaded env file: ${options.env} (${Object.keys(envVars).length} vars)`);
+      }
 
       const resolvedFile = await resolveFilePath(file);
       const parsedFile: ParsedGqlFile = await loadGqlFile(resolvedFile, {
-        allowCommandSubstitution: options.allowCommands,
+        extraVariables: envVars,
       });
+
+      // Resolve {{ $(...) }} command substitution tokens after parsing.
+      // Parser leaves them as literals; execution is gated behind --allow-commands.
+      if (options.allowCommands) {
+        for (const request of parsedFile.requests) {
+          if (request.endpoint) {
+            request.endpoint = executeCommandTokens(request.endpoint);
+          }
+          if (request.headers) {
+            for (const key of Object.keys(request.headers)) {
+              request.headers[key] = executeCommandTokens(request.headers[key]);
+            }
+          }
+        }
+      }
 
       if (parsedFile.requests.length === 0) {
         logger.error('No requests found in file');
@@ -309,9 +341,6 @@ export const executeCommand = new Command()
       }
 
       // Load credentials once for all requests.
-      const credentials = options.skipAuth ? null : await loadCredentials(format === 'compact');
-      const normalizedAccessToken = normalizeAccessToken(credentials?.access_token);
-
       const fileEndpoint = options.endpoint || parsedFile.endpoint;
       const endpointSource = options.endpoint ? 'CLI' : `file: ${basename(resolvedFile)}`;
       if (fileEndpoint) {
@@ -334,7 +363,7 @@ export const executeCommand = new Command()
 
         if (!options.allowCommands && request.headers) {
           const hasCommandPlaceholder = Object.values(request.headers).some((v) =>
-            v.includes('{{$(')
+            /\{\{\s*\$\(/.test(v)
           );
           if (hasCommandPlaceholder) {
             logger.error(
@@ -344,7 +373,7 @@ export const executeCommand = new Command()
           }
         }
 
-        // Per-request endpoint: request-level → file-level → CLI override.
+        // Per-request endpoint precedence: CLI flag > request-level > file-level.
         const endpoint = options.endpoint || request.endpoint || parsedFile.endpoint;
         if (!endpoint) {
           logger.error(
@@ -368,8 +397,7 @@ export const executeCommand = new Command()
           logger.info(`  Endpoint: ${endpoint}`);
         }
 
-        // Fresh allHeaders per request (declared before GraphQLClient so the
-        // fetch closure captures the right object by reference).
+        // Fresh allHeaders per request.
         const allHeaders: Record<string, string> = {};
 
         const client = new GraphQLClient(endpoint as string, {
@@ -406,37 +434,13 @@ export const executeCommand = new Command()
         if (request.headers) {
           logger.debug('Setting headers from file:');
           for (const [key, value] of Object.entries(request.headers)) {
-            const resolvedValue = resolveAuthPlaceholders(
-              value,
-              credentials?.access_token,
-              credentials?.id_token,
-            );
-            if (
-              !options.skipAuth &&
-              (resolvedValue.includes('{{TOKEN}}') || resolvedValue.includes('{{ACCESS_TOKEN}}'))
-            ) {
-              logger.error(
-                'Auth placeholder found but no valid access token available. Run okta-client login to refresh credentials.',
-              );
-              Deno.exit(1);
-            }
             const dv = key.toLowerCase() === 'authorization' && value.includes('Bearer ')
-              ? `Bearer ${resolvedValue.replace('Bearer ', '').split('.')[0]}...`
-              : resolvedValue;
+              ? `Bearer ${value.replace('Bearer ', '').split('.')[0]}...`
+              : value;
             logger.debug(`  ${key}: ${dv}`);
-            allHeaders[key] = resolvedValue;
-            client.setHeader(key, resolvedValue);
+            allHeaders[key] = value;
+            client.setHeader(key, value);
           }
-        }
-
-        if (!options.skipAuth && !allHeaders['Authorization']) {
-          if (normalizedAccessToken) {
-            allHeaders['Authorization'] = `Bearer ${normalizedAccessToken}`;
-            client.setHeader('Authorization', `Bearer ${normalizedAccessToken}`);
-            logger.debug('Using Authorization from okta-client credentials');
-          }
-        } else if (allHeaders['Authorization']) {
-          logger.debug('Using Authorization from file (takes precedence over okta-client)');
         }
 
         logger.debug('All headers configured:');

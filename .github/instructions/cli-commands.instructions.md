@@ -49,10 +49,10 @@ const mainCommand = new Command()
 
 ## Commands in this repo
 
-| Command          | File         | Description                                                      |
-| ---------------- | ------------ | ---------------------------------------------------------------- |
-| `execute <file>` | `execute.ts` | Execute one or all requests from a .http file                    |
-| `config`         | `config.ts`  | Manage config (subcommands: show, set-env)                       |
+| Command          | File         | Description                                   |
+| ---------------- | ------------ | --------------------------------------------- |
+| `execute <file>` | `execute.ts` | Execute one or all requests from a .http file |
+| `config`         | `config.ts`  | Manage config (subcommand: show)              |
 
 ## Output Format Convention
 

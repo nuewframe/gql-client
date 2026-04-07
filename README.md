@@ -110,7 +110,7 @@ gql-client execute smoke.http --fail-on-errors --allow-commands
 
 ### `config`
 
-Manage `~/.gql-client/config.json`.
+Manage `~/.nuewframe/gql-client/config.json`.
 
 ```bash
 gql-client config show                # print config as JSON
@@ -179,7 +179,7 @@ gql-client execute health.http --fail-on-errors --allow-commands || echo "Health
 
 ## Configuration
 
-`~/.gql-client/config.json`:
+`~/.nuewframe/gql-client/config.json`:
 
 ```json
 {

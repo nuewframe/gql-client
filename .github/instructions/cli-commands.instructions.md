@@ -5,6 +5,19 @@ applyTo: 'commands/*.ts'
 
 # CLI Command Conventions (Cliffy)
 
+## Commands as Composition
+
+A CLI command is the **composition layer** — it wires together capabilities, data
+structures, and functions but contains no business logic itself. The pattern:
+
+1. Import types (capability) and functions from domain modules
+2. Declare CLI options and arguments (the user-facing interface)
+3. In the action handler, compose the imported functions into a pipeline
+4. Route output to stdout (data) and stderr (diagnostics)
+
+Business logic lives in `commands/<domain>/` modules (e.g., `requests/executor.ts`,
+`tokens/substitution.ts`). The command file (`run.ts`, `config.ts`) only orchestrates.
+
 ## Command File Structure
 
 Each command lives in its own file under `commands/` and exports a single `Command` instance:
@@ -49,14 +62,14 @@ const mainCommand = new Command()
 
 ## Commands in this repo
 
-| Command          | File         | Description                                   |
-| ---------------- | ------------ | --------------------------------------------- |
-| `execute <file>` | `execute.ts` | Execute one or all requests from a .http file |
-| `config`         | `config.ts`  | Manage config (subcommand: show)              |
+| Command      | File        | Description                               |
+| ------------ | ----------- | ----------------------------------------- |
+| `run <file>` | `run.ts`    | Run one or all requests from a .http file |
+| `config`     | `config.ts` | Manage config (subcommand: show)          |
 
 ## Output Format Convention
 
-The `execute` command supports `-o / --output`:
+The `run` command supports `-o / --output`:
 
 | Format    | Behavior                                                  |
 | --------- | --------------------------------------------------------- |
@@ -77,8 +90,8 @@ const logger = new Logger(options.output === 'compact' ? LogLevel.None : LogLeve
 Stdout is reserved for program data output only. This allows:
 
 ```bash
-gql-client execute query.http | jq '.[] | .data'
-gql-client execute query.http -o compact | jq
+gql-client run query.http | jq '.[] | .data'
+gql-client run query.http -o compact | jq
 ```
 
 Never use `console.log` for debug/status lines — use `logger.info()` / `logger.debug()`.
@@ -131,7 +144,7 @@ authCommand.command('clear', 'Remove stored credentials')
   try {
     // implementation
   } catch (error) {
-    console.error('❌ execute failed:', error instanceof Error ? error.message : String(error));
+    console.error('❌ run failed:', error instanceof Error ? error.message : String(error));
     Deno.exit(1);
   }
 });

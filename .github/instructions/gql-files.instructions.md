@@ -75,7 +75,7 @@ POST {{ HOST_URL }} HTTP/1.1
 
 ## Command Substitution
 
-Requires `--allow-commands` flag to be passed to `gql-client execute`.
+Requires `--allow-commands` flag to be passed to `gql-client run`.
 
 ```http
 @TOKEN: {{ $( okta-client get access-token ) }}
@@ -107,7 +107,7 @@ query Me {
 Run with:
 
 ```bash
-gql-client execute queries.http --allow-commands
+gql-client run queries.http --allow-commands
 ```
 
 ## Multiple Requests in One File
@@ -138,19 +138,19 @@ query GetOrgs {
 Execute all requests:
 
 ```bash
-gql-client execute queries.http --allow-commands
+gql-client run queries.http --allow-commands
 ```
 
 Execute only the second request:
 
 ```bash
-gql-client execute queries.http -n 2 --allow-commands
+gql-client run queries.http -n 2 --allow-commands
 ```
 
 List requests without executing:
 
 ```bash
-gql-client execute queries.http --list
+gql-client run queries.http --list
 ```
 
 ## GraphQL Variables
@@ -186,10 +186,10 @@ query GetUser {
 ## Output Format Selection
 
 ```bash
-gql-client execute query.http -o yaml      # default: YAML array
-gql-client execute query.http -o json      # indented JSON
-gql-client execute query.http -o compact   # single-line JSON (pipeline-friendly)
-gql-client execute query.http -o pretty    # human-readable with banners
+gql-client run query.http -o yaml      # default: YAML array
+gql-client run query.http -o json      # indented JSON
+gql-client run query.http -o compact   # single-line JSON (pipeline-friendly)
+gql-client run query.http -o pretty    # human-readable with banners
 ```
 
 ## Filtering Output
@@ -197,13 +197,13 @@ gql-client execute query.http -o pretty    # human-readable with banners
 Field selection (dot-path):
 
 ```bash
-gql-client execute query.http --field data.users
+gql-client run query.http --field data.users
 ```
 
-jq filter (requires `--allow-commands`):
+jq filtering (shell pipeline):
 
 ```bash
-gql-client execute query.http --select '.[] | .data.users[]'
+gql-client run query.http -o compact --allow-commands | jq '.[] | .data.users[]'
 ```
 
 ## Naming Conventions

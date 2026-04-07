@@ -88,10 +88,10 @@ Deno.test('main command is registered', () => {
   assertEquals(mainCommand.getName(), 'gql-client');
 });
 
-Deno.test('execute subcommand exists', () => {
-  const cmd = mainCommand.getCommand('execute');
+Deno.test('run subcommand exists', () => {
+  const cmd = mainCommand.getCommand('run');
   assertExists(cmd);
-  assertEquals(cmd.getName(), 'execute');
+  assertEquals(cmd.getName(), 'run');
 });
 
 Deno.test('list subcommand exists', () => {

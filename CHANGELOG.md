@@ -5,6 +5,20 @@ All notable changes to `gql-client` are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.2.0](https://github.com/nuewframe/gql-client/compare/gql-client-v1.1.2...gql-client-v1.2.0) (2026-04-07)
+
+
+### Features
+
+* add run/validate flow and comprehensive test coverage ([#7](https://github.com/nuewframe/gql-client/issues/7)) ([2b3fb11](https://github.com/nuewframe/gql-client/commit/2b3fb11ae75c13cafb2988fe4454ce8e6bc3ad6d))
+* **validate:** add validation command for .http files ([2b3fb11](https://github.com/nuewframe/gql-client/commit/2b3fb11ae75c13cafb2988fe4454ce8e6bc3ad6d))
+* **validate:** enhance validation diagnostics and refactor code ([2b3fb11](https://github.com/nuewframe/gql-client/commit/2b3fb11ae75c13cafb2988fe4454ce8e6bc3ad6d))
+
+
+### Bug Fixes
+
+* **gql-parser:** ensure correct parsing of JSON variables with duplicate lines ([2b3fb11](https://github.com/nuewframe/gql-client/commit/2b3fb11ae75c13cafb2988fe4454ce8e6bc3ad6d))
+
 ## [1.1.2](https://github.com/nuewframe/gql-client/compare/gql-client-v1.1.1...gql-client-v1.1.2) (2026-03-26)
 
 ### Bug Fixes

@@ -1,6 +1,6 @@
 {
   "name": "@nuewframe/gql-client",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "exports": "./main.ts",
   "tasks": {
     "dev": "deno run --allow-read --allow-write --allow-env --allow-net --allow-run main.ts",

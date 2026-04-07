@@ -1,5 +1,7 @@
 {
   "chat.tools.terminal.autoApprove": {
-    "deno": true
+    "deno": true,
+    "git fetch": true,
+    "git status": true
   }
 }

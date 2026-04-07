@@ -2,7 +2,7 @@
 
 import { Command } from '@cliffy/command';
 import denoJson from './deno.json' with { type: 'json' };
-import { executeCommand } from './commands/execute.ts';
+import { runCommand } from './commands/run.ts';
 import { configCommand } from './commands/config.ts';
 import { validateCommand } from './commands/validate.ts';
 
@@ -11,7 +11,7 @@ const mainCommand = new Command()
   .version(denoJson.version)
   .description('GraphQL Client CLI for executing queries and mutations')
   .meta('deno', Deno.version.deno)
-  .command('execute', executeCommand)
+  .command('run', runCommand)
   .command('config', configCommand)
   .command('validate', validateCommand);
 

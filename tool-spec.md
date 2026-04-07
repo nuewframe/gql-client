@@ -2,33 +2,31 @@
 
 ## Commands
 
-### `execute <file>`
+### `run <file>`
 
 Execute one or all GraphQL requests from a `.http` file.
 
 ```
-gql-client execute <file> [options]
+gql-client run <file> [options]
 ```
 
-| Option                   | Type                               | Default                  | Description                                                |
-| ------------------------ | ---------------------------------- | ------------------------ | ---------------------------------------------------------- |
-| `-e, --endpoint <url>`   | string                             | from config or @HOST_URL | Override GraphQL endpoint URL                              |
-| `-v, --variables <json>` | string                             | —                        | JSON string of GraphQL variables                           |
-| `--env <env>`            | string                             | config `defaultEnv`      | Config environment to use                                  |
-| `--skip-auth`            | boolean                            | false                    | Skip injecting Authorization header                        |
-| `--allow-commands`       | boolean                            | false                    | Enable `{{ $(cmd) }}` variable substitution                |
-| `-n, --number <n>`       | number                             | all                      | Execute only the Nth request                               |
-| `-o, --output <format>`  | yaml\|json\|compact\|pretty\|table | yaml                     | Output format                                              |
-| `--list`                 | boolean                            | false                    | List requests without executing                            |
-| `--field <path>`         | string                             | —                        | Extract a dot-path field from results                      |
-| `--select <jq>`          | string                             | —                        | Apply jq filter to results (requires `--allow-commands`)   |
-| `--fail-on-errors`       | boolean                            | false                    | Exit 1 if any response contains GraphQL errors             |
-| `--log-level <level>`    | none\|info\|debug                  | auto                     | Log verbosity (auto-silenced for compact/JSON/YAML output) |
-| `--verbose`              | boolean                            | false                    | Equivalent to `--log-level debug`                          |
+| Option                   | Type                               | Default                               | Description                                                 |
+| ------------------------ | ---------------------------------- | ------------------------------------- | ----------------------------------------------------------- |
+| `-e, --endpoint <url>`   | string                             | from config or @HOST_URL              | Override GraphQL endpoint URL                               |
+| `-v, --variables <json>` | string                             | —                                     | JSON string of GraphQL variables                            |
+| `--env-file <file>`      | string                             | `~/.nuewframe/gql-client/config.json` | Path to config file with environments                       |
+| `--env <env>`            | string                             | config `defaultEnv`                   | Environment name in config to use for variable substitution |
+| `--allow-commands`       | boolean                            | false                                 | Enable `{{ $(cmd) }}` variable substitution                 |
+| `-n, --request <n>`      | number                             | all                                   | Execute only the Nth request                                |
+| `-o, --output <format>`  | yaml\|json\|compact\|pretty\|table | yaml                                  | Output format                                               |
+| `--list`                 | boolean                            | false                                 | List requests without executing                             |
+| `--field <path>`         | string                             | —                                     | Extract a dot-path field from results                       |
+| `--fail-on-errors`       | boolean                            | false                                 | Exit 1 if any response contains GraphQL errors              |
+| `--log-level <level>`    | none\|info\|debug                  | auto                                  | Log verbosity (auto-silenced for compact/JSON/YAML output)  |
+| `--verbose`              | boolean                            | false                                 | Equivalent to `--log-level debug`                           |
 
 **Notes**:
 
-- `--field` and `--select` cannot be combined
 - Log output is automatically silenced when `-o compact`, `-o json`, `-o yaml`, or `-o table` is used (unless `--list` is active)
 - `--allow-commands` requires `--allow-run` permission to be granted (baked into the binary)
 
@@ -46,29 +44,31 @@ gql-client execute <file> [options]
 
 ```bash
 # Execute all requests
-gql-client execute queries.http
+gql-client run queries.http
 
-# Execute with Okta token injection
-gql-client execute queries.http --allow-commands
+# Execute using default env from config
+gql-client run queries.http
+
+# Execute using specific env from config
+gql-client run queries.http --env production
+
+# Execute with custom config path
+gql-client run queries.http --env-file ./config.json --env production
 
 # Execute only the 2nd request
-gql-client execute queries.http -n 2 --allow-commands
+gql-client run queries.http -n 2 --allow-commands
 
 # List all requests without executing
-gql-client execute queries.http --list
+gql-client run queries.http --list
 
 # JSON output piped to jq
-gql-client execute queries.http -o compact --allow-commands | jq '.[0].data'
+gql-client run queries.http -o compact --allow-commands | jq '.[0].data'
 
 # Extract a field
-gql-client execute queries.http --field data.users --allow-commands
-
-# jq filter (requires --allow-commands)
-gql-client execute queries.http -o compact --allow-commands \
-  --select '.[] | .data.users[] | .name'
+gql-client run queries.http --field data.users --allow-commands
 
 # Fail CI if GraphQL errors returned
-gql-client execute smoke.http --fail-on-errors --allow-commands
+gql-client run smoke.http --fail-on-errors --allow-commands
 ```
 
 ---
@@ -87,19 +87,20 @@ gql-client config show
 
 **Output**: Indented JSON of the config file to stdout.
 
-#### `config set-env <env>`
+#### `config set-default <env>`
 
-Set the default environment used by `execute`.
+Set the default environment used by `run`.
 
 ```
-gql-client config set-env <env>
+gql-client config set-default <env>
 ```
 
 **Example**:
 
 ```bash
-gql-client config set-env production
-gql-client config set-env development
+gql-client config set-default production
+gql-client config set-default development
+gql-client config set-default production --env-file ./config.json
 ```
 
 ---
@@ -178,19 +179,19 @@ If the file is absent, auth headers are not injected (silently unauthenticated).
 
 ```bash
 # Basic pipeline
-gql-client execute query.http -o compact --allow-commands | jq
+gql-client run query.http -o compact --allow-commands | jq
 
 # Extract user list
-gql-client execute users.http -o compact --allow-commands | jq '.[0].data.users'
+gql-client run users.http -o compact --allow-commands | jq '.[0].data.users'
 
 # Count results
-gql-client execute users.http -o compact --allow-commands | jq '.[0].data.users | length'
+gql-client run users.http -o compact --allow-commands | jq '.[0].data.users | length'
 
 # Save to file
-gql-client execute users.http -o json --allow-commands > results.json
+gql-client run users.http -o json --allow-commands > results.json
 
 # Use in CI
-if ! gql-client execute smoke.http --fail-on-errors --allow-commands; then
+if ! gql-client run smoke.http --fail-on-errors --allow-commands; then
   echo "Smoke test failed"; exit 1
 fi
 ```
@@ -201,14 +202,14 @@ fi
 
 ```bash
 # Run all requests in a file
-gql-client execute queries.http --allow-commands
+gql-client run queries.http --allow-commands
 
 # Run one specific request
-gql-client execute queries.http -n 1 --allow-commands
+gql-client run queries.http -n 1 --allow-commands
 
 # List requests in a file
-gql-client execute queries.http --list
+gql-client run queries.http --list
 
 # Set default environment
-gql-client config set-env production
+gql-client config set-default production
 ```

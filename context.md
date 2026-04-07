@@ -13,7 +13,7 @@ Results are printed to stdout in multiple formats, enabling pipeline composition
 ```
 main.ts                    CLI entry point; registers all commands with Cliffy
 commands/
-  execute.ts               Execute one or all requests from a .http file
+  run.ts                   Run one or all requests from a .http file
   list.ts                  Recursively list .http files in a directory
   config.ts                Manage ~/.nuewframe/gql-client/config.json (show)
   auth.ts                  Check/clear okta-client credentials (status/clear)
@@ -62,29 +62,31 @@ Key elements:
 
 ## Key Files
 
-| File                  | Role                                                                    |
-| --------------------- | ----------------------------------------------------------------------- |
-| `deno.json`           | Package manifest: `@nuewframe/gql-client` v1.0.1, imports map, tasks    |
-| `main.ts`             | Export `mainCommand`; entry point when `import.meta.main`               |
-| `commands/execute.ts` | Core command: parse → resolve variables → execute → format → print      |
-| `utils/gql-parser.ts` | `parseHttpFile()`, `resolveVariables()`, `parseRequests()`              |
-| `commands/config.ts`  | `getConfig()`, `saveConfig()` for `~/.nuewframe/gql-client/config.json` |
+| File                            | Role                                                                    |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| `deno.json`                     | Package manifest: `@nuewframe/gql-client` v1.0.1, imports map, tasks    |
+| `main.ts`                       | Export `mainCommand`; entry point when `import.meta.main`               |
+| `commands/run.ts`               | Core command entrypoint: options + delegation to run executor           |
+| `commands/requests/executor.ts` | Core run flow: parse → resolve variables → execute → format → print     |
+| `utils/gql-parser.ts`           | `parseHttpFile()`, `resolveVariables()`, `parseRequests()`              |
+| `commands/config.ts`            | `getConfig()`, `saveConfig()` for `~/.nuewframe/gql-client/config.json` |
 
 ## Command Surface Summary
 
 ```
-gql-client execute <file>             Execute all requests in a .http file
-  -n, --number <n>                    Execute only the Nth request
+gql-client run <file>             Execute all requests in a .http file
+  -n, --request <n>                   Execute only the Nth request
   -o, --output yaml|json|compact|pretty  Output format (default: yaml)
   --list                              List requests without executing
   --field <path>                      Extract a field from results (dot-path)
-  --select <jq>                       Apply jq filter to results
   --fail-on-errors                    Exit 1 if any response has GraphQL errors
   --allow-commands                    Enable {{ $( cmd ) }} substitution
-  --verbose                           Enable debug logging
+  --env-file <configPath>             Config file path (default ~/.nuewframe/gql-client/config.json)
+  --env <name>                        Environment name from config
+  --log-level none|info|debug         Logging verbosity
 
 gql-client config show                Show ~/.nuewframe/gql-client/config.json
-gql-client config set-env <env>       Set default environment
+gql-client config set-default <env>   Set default environment
 ```
 
 ## Output Formats
@@ -123,7 +125,7 @@ gql-client config set-env <env>       Set default environment
 Stdout carries only program data. This enables:
 
 ```bash
-gql-client execute query.http -o compact --allow-commands | jq '.[0].data'
+gql-client run query.http -o compact --allow-commands | jq '.[0].data'
 ```
 
 Never use `console.log` for diagnostic messages.

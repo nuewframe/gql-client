@@ -2,7 +2,7 @@ import { assert, assertEquals, assertExists } from '@std/assert';
 
 import denoJson from './deno.json' with { type: 'json' };
 import { mainCommand } from './main.ts';
-import { executeCommand } from './commands/execute.ts';
+import { runCommand } from './commands/run.ts';
 import { configCommand } from './commands/config.ts';
 import { validateCommand } from './commands/validate.ts';
 import { Logger } from './utils/logger.ts';
@@ -23,13 +23,13 @@ Deno.test('GQL CLI - main command metadata is set', () => {
 });
 
 Deno.test('GQL CLI - top-level commands are registered', () => {
-  assertExists(mainCommand.getCommand('execute'));
+  assertExists(mainCommand.getCommand('run'));
   assertExists(mainCommand.getCommand('config'));
   assertExists(mainCommand.getCommand('validate'));
 });
 
 Deno.test('GQL CLI - command exports are defined', () => {
-  assertExists(executeCommand);
+  assertExists(runCommand);
   assertExists(configCommand);
   assertExists(validateCommand);
 });

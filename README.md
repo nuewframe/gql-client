@@ -45,7 +45,7 @@ query { __typename }
 EOF
 
 # 2. Execute it
-gql-client execute query.http
+gql-client run query.http
 
 # 3. With Okta auth (requires okta-client installed and logged in)
 cat > query.http << 'EOF'
@@ -60,52 +60,52 @@ Content-Type: application/json
 query GetMe { me { id email } }
 EOF
 
-gql-client execute query.http --allow-commands
+gql-client run query.http --allow-commands
 ```
 
 ## Command Reference
 
-### `execute <file>`
+### `run <file>`
 
 Execute one or all requests from a `.http` file.
 
 ```bash
-gql-client execute <file> [options]
+gql-client run <file> [options]
 ```
 
-| Option                 | Default | Description                                                 |
-| ---------------------- | ------- | ----------------------------------------------------------- |
-| `-n, --number <n>`     | all     | Execute only the Nth request                                |
-| `-o, --output <fmt>`   | yaml    | Output format: `yaml`, `json`, `compact`, `pretty`, `table` |
-| `--list`               | —       | List requests without executing                             |
-| `--allow-commands`     | —       | Enable `{{ $(cmd) }}` variable substitution                 |
-| `--fail-on-errors`     | —       | Exit 1 if any response contains GraphQL errors              |
-| `--field <path>`       | —       | Extract a dot-path field from results                       |
-| `--select <jq>`        | —       | Apply jq filter to results                                  |
-| `--skip-auth`          | —       | Skip injecting Authorization header                         |
-| `-e, --endpoint <url>` | —       | Override GraphQL endpoint URL                               |
-| `--verbose`            | —       | Enable debug logging                                        |
+| Option                    | Default                               | Description                                                 |
+| ------------------------- | ------------------------------------- | ----------------------------------------------------------- |
+| `-n, --request <n>`       | all                                   | Execute only the Nth request                                |
+| `-o, --output <fmt>`      | yaml                                  | Output format: `yaml`, `json`, `compact`, `pretty`, `table` |
+| `--list`                  | —                                     | List requests without executing                             |
+| `--allow-commands`        | —                                     | Enable `{{ $(cmd) }}` variable substitution                 |
+| `--fail-on-errors`        | —                                     | Exit 1 if any response contains GraphQL errors              |
+| `--field <path>`          | —                                     | Extract a dot-path field from results                       |
+| `-e, --endpoint <url>`    | —                                     | Override GraphQL endpoint URL                               |
+| `--env-file <configPath>` | `~/.nuewframe/gql-client/config.json` | Config file containing environment variables                |
+| `--env <name>`            | `defaultEnv` from config              | Environment name to use from config                         |
+| `--log-level <level>`     | `info`                                | Log level: `none`, `info`, `debug`                          |
 
 **Examples**:
 
 ```bash
 # Execute all requests
-gql-client execute queries.http --allow-commands
+gql-client run queries.http --allow-commands
 
 # Execute the 2nd request only
-gql-client execute queries.http -n 2 --allow-commands
+gql-client run queries.http -n 2 --allow-commands
 
 # List all requests in the file
-gql-client execute queries.http --list
+gql-client run queries.http --list
 
 # Compact JSON output (pipeline-friendly)
-gql-client execute queries.http -o compact --allow-commands | jq '.[0].data'
+gql-client run queries.http -o compact --allow-commands | jq '.[0].data'
 
 # Extract a field
-gql-client execute queries.http --field data.users --allow-commands
+gql-client run queries.http --field data.users --allow-commands
 
 # CI smoke test
-gql-client execute smoke.http --fail-on-errors --allow-commands
+gql-client run smoke.http --fail-on-errors --allow-commands
 ```
 
 ### `config`
@@ -113,8 +113,9 @@ gql-client execute smoke.http --fail-on-errors --allow-commands
 Manage `~/.nuewframe/gql-client/config.json`.
 
 ```bash
-gql-client config show                # print config as JSON
-gql-client config set-env production  # set default environment
+gql-client config show -o json                     # print config as JSON
+gql-client config set-default production           # set default environment
+gql-client config set-default production --env-file ./config.json
 ```
 
 ## .http File Format
@@ -165,16 +166,16 @@ Because `gql-client` writes diagnostics to **stderr** and data to **stdout**, yo
 
 ```bash
 # Extract user list
-gql-client execute users.http -o compact --allow-commands | jq '.[0].data.users'
+gql-client run users.http -o compact --allow-commands | jq '.[0].data.users'
 
 # Count results
-gql-client execute users.http -o compact --allow-commands | jq '.[0].data.users | length'
+gql-client run users.http -o compact --allow-commands | jq '.[0].data.users | length'
 
 # Save to file
-gql-client execute users.http -o json --allow-commands > results.json
+gql-client run users.http -o json --allow-commands > results.json
 
 # CI assertion
-gql-client execute health.http --fail-on-errors --allow-commands || echo "Health check failed"
+gql-client run health.http --fail-on-errors --allow-commands || echo "Health check failed"
 ```
 
 ## Configuration
@@ -186,24 +187,37 @@ gql-client execute health.http --fail-on-errors --allow-commands || echo "Health
   "defaultEnv": "production",
   "environments": {
     "production": {
-      "endpoint": "https://api.example.com/graphql",
-      "headers": { "X-App-Version": "1.0" }
+      "HOST_URL": "https://api.example.com/graphql",
+      "TOKEN": "{{$(okta-client get access-token)}}"
     }
   }
 }
 ```
 
-## Integration with okta-client
+Use with run:
 
 ```bash
-# 1. Authenticate with Okta
-okta-client login user@example.com --env dev
+# Authenticate first (pick one)
+okta-client login-browser --env production --port 7879
+okta-client login wael@example.com --env production
 
-# 2. Execute queries with auto-injected token
-gql-client execute queries.http --allow-commands
+# Then execute requests against env variables from config
+gql-client run sample.http --env production --allow-commands
+gql-client run sample.http --env-file ./config.json --env production --allow-commands
 ```
 
-The `access_token` from `~/.nuewframe/credential.json` (written by `okta-client`) is automatically read and injected as `Authorization: Bearer <token>`.
+In your .http file, use command substitution for TOKEN and reuse it in Authorization:
+
+```http
+@TOKEN: {{$(okta-client get access-token)}}
+
+###
+POST {{HOST_URL}} HTTP/1.1
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+
+query { __typename }
+```
 
 ## Development
 

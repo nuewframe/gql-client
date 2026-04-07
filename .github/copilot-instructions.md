@@ -10,13 +10,13 @@ from `.http` files. It integrates with `okta-client` by reading tokens from
 
 The codebase follows a strict layering paradigm: **Capability → Data Structure → Function → Composition → Integration**.
 
-| Layer           | What it defines                              | Examples in this repo                         |
-| --------------- | -------------------------------------------- | --------------------------------------------- |
-| **Capability**  | Types and interfaces — what the system can do | `GqlContent`, `ParsedGqlFile`, `RunOutputFormat` |
-| **Data**        | Concrete shapes flowing through the pipeline  | Parsed requests, config schemas, result objects |
-| **Function**    | Stateless transforms on data structures       | `loadGqlFile()`, `executeCommandTokens()`, `emitOutput()` |
-| **Composition** | CLI commands that wire functions together      | `commands/run.ts`, `commands/config.ts`       |
-| **Integration** | Contracts connecting layers and external deps  | Shared types, stdout/stderr contract, `~/.nuewframe/` file contract |
+| Layer           | What it defines                               | Examples in this repo                                               |
+| --------------- | --------------------------------------------- | ------------------------------------------------------------------- |
+| **Capability**  | Types and interfaces — what the system can do | `GqlContent`, `ParsedGqlFile`, `RunOutputFormat`                    |
+| **Data**        | Concrete shapes flowing through the pipeline  | Parsed requests, config schemas, result objects                     |
+| **Function**    | Stateless transforms on data structures       | `loadGqlFile()`, `executeCommandTokens()`, `emitOutput()`           |
+| **Composition** | CLI commands that wire functions together     | `commands/run.ts`, `commands/config.ts`                             |
+| **Integration** | Contracts connecting layers and external deps | Shared types, stdout/stderr contract, `~/.nuewframe/` file contract |
 
 Commands are the composition layer — they import types and functions, wire them in the
 `.action()` handler, and route output. They never contain business logic directly.

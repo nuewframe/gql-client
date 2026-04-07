@@ -9,7 +9,7 @@ applyTo: '**/*.ts'
 
 All code follows a strict layering order: **Capability → Data Structure → Function → Composition → Integration**.
 
-1. **Capability** — Define *what* the system can do via TypeScript types and interfaces.
+1. **Capability** — Define _what_ the system can do via TypeScript types and interfaces.
    Types are declared before any implementation. They are the source of truth.
 2. **Data Structure** — Concrete types that flow through the system (parsed files, configs,
    results, errors). Data structures implement capabilities.

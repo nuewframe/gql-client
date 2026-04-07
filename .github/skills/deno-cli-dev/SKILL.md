@@ -23,12 +23,12 @@ the same paradigm.
 
 ### The Five Layers
 
-| Order | Layer           | What it defines                              | Where it lives                              |
-| ----- | --------------- | -------------------------------------------- | ------------------------------------------- |
-| 1     | **Capability**  | What the system can do (types, interfaces)   | Type exports in domain modules              |
-| 2     | **Data**        | Shapes that flow through the system          | Type exports: `GqlContent`, `ParsedGqlFile` |
-| 3     | **Function**    | Stateless transforms on data structures      | Named exports in `commands/<domain>/*.ts`   |
-| 4     | **Composition** | Wires functions into a user-facing command   | `commands/run.ts`, `commands/config.ts`     |
+| Order | Layer           | What it defines                               | Where it lives                              |
+| ----- | --------------- | --------------------------------------------- | ------------------------------------------- |
+| 1     | **Capability**  | What the system can do (types, interfaces)    | Type exports in domain modules              |
+| 2     | **Data**        | Shapes that flow through the system           | Type exports: `GqlContent`, `ParsedGqlFile` |
+| 3     | **Function**    | Stateless transforms on data structures       | Named exports in `commands/<domain>/*.ts`   |
+| 4     | **Composition** | Wires functions into a user-facing command    | `commands/run.ts`, `commands/config.ts`     |
 | 5     | **Integration** | Contracts connecting layers and external deps | Shared types, stdout/stderr, file contracts |
 
 ### Rules
@@ -159,10 +159,10 @@ export const myCommand = new Command()
 
 ## Anti-Patterns
 
-| Anti-pattern                              | Correct approach                                    |
-| ----------------------------------------- | --------------------------------------------------- |
-| Business logic inside `.action()` handler | Extract to a domain function, compose in the command |
-| Untyped data passed between modules       | Define an interface; use it as the contract          |
-| God module that parses + executes + formats | Split into focused modules per layer                |
-| Functions with side effects (console.log) | Return data; let the composition layer handle I/O   |
-| Importing internal helpers across domains | Promote to a shared type or utility                 |
+| Anti-pattern                                | Correct approach                                     |
+| ------------------------------------------- | ---------------------------------------------------- |
+| Business logic inside `.action()` handler   | Extract to a domain function, compose in the command |
+| Untyped data passed between modules         | Define an interface; use it as the contract          |
+| God module that parses + executes + formats | Split into focused modules per layer                 |
+| Functions with side effects (console.log)   | Return data; let the composition layer handle I/O    |
+| Importing internal helpers across domains   | Promote to a shared type or utility                  |

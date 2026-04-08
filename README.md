@@ -4,6 +4,8 @@
 
 A Deno CLI for executing GraphQL queries and mutations from `.http` files. Integrates with [`okta-client`](https://github.com/nuewframe/okta-client) to inject `Authorization: Bearer` headers automatically.
 
+Refer to the `okta-client` README section ["Integration with gql-client"](https://github.com/nuewframe/okta-client#integration-with-gql-client) for the latest token usage and examples.
+
 ## Why
 
 GraphQL queries live in source control as `.http` files. `gql-client` runs them from the command line — with automatic Okta auth, output formatting, and `jq`-compatible piping — without needing Postman, Insomnia, or a browser.
@@ -50,7 +52,7 @@ gql-client run query.http
 # 3. With Okta auth (requires okta-client installed and logged in)
 cat > query.http << 'EOF'
 @HOST_URL: "https://api.example.com/graphql"
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( okta-client token access ) }}
 
 ###
 POST {{ HOST_URL }} HTTP/1.1
@@ -124,7 +126,7 @@ Files follow the [JetBrains HTTP Client](https://www.jetbrains.com/help/idea/htt
 
 ```http
 @HOST_URL: "https://api.example.com/graphql"
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( okta-client token access ) }}
 
 ###
 POST {{ HOST_URL }} HTTP/1.1
@@ -188,7 +190,7 @@ gql-client run health.http --fail-on-errors --allow-commands || echo "Health che
   "environments": {
     "production": {
       "HOST_URL": "https://api.example.com/graphql",
-      "TOKEN": "{{$(okta-client get access-token)}}"
+      "TOKEN": "{{$(okta-client token access)}}"
     }
   }
 }
@@ -198,8 +200,8 @@ Use with run:
 
 ```bash
 # Authenticate first (pick one)
-okta-client login-browser --env production --port 7879
-okta-client login wael@example.com --env production
+okta-client login browser --env production
+okta-client login password wael@example.com --env production
 
 # Then execute requests against env variables from config
 gql-client run sample.http --env production --allow-commands
@@ -209,7 +211,7 @@ gql-client run sample.http --env-file ./config.json --env production --allow-com
 In your .http file, use command substitution for TOKEN and reuse it in Authorization:
 
 ```http
-@TOKEN: {{$(okta-client get access-token)}}
+@TOKEN: {{$(okta-client token access)}}
 
 ###
 POST {{HOST_URL}} HTTP/1.1

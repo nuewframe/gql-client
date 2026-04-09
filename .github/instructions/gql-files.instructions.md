@@ -1,5 +1,5 @@
 ---
-description: 'Use when creating, editing, or understanding .http files for the gql-client tool. Covers JetBrains HTTP Client format, request sections, variable declarations, substitution syntax, and integration with okta-client tokens.'
+description: 'Use when creating, editing, or understanding .http files for the gql-client tool. Covers JetBrains HTTP Client format, request sections, variable declarations, substitution syntax, and integration with nfauth tokens.'
 applyTo: '**/*.http'
 ---
 
@@ -78,7 +78,7 @@ POST {{ HOST_URL }} HTTP/1.1
 Requires `--allow-commands` flag to be passed to `gql-client run`.
 
 ```http
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( nfauth token access ) }}
 ```
 
 Syntax: `{{ $( shell command here ) }}`
@@ -89,7 +89,7 @@ The shell command's stdout (trimmed) becomes the variable value.
 
 ```http
 @HOST_URL: "https://api.example.com/graphql"
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( nfauth token access ) }}
 
 ###
 POST {{ HOST_URL }} HTTP/1.1
@@ -114,7 +114,7 @@ gql-client run queries.http --allow-commands
 
 ```http
 @HOST_URL: "https://api.example.com/graphql"
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( nfauth token access ) }}
 
 ###
 POST {{ HOST_URL }} HTTP/1.1
@@ -215,6 +215,6 @@ gql-client run query.http -o compact --allow-commands | jq '.[] | .data.users[]'
 
 ## Security Notes
 
-- Never commit real access tokens in `.http` files — always use `{{ $( okta-client get access-token ) }}`
+- Never commit real access tokens in `.http` files — always use `{{ $( nfauth token access ) }}`
 - Never hardcode API keys; use command substitution or prompt the user
 - Add `*.http` to `.env` exclusions but keep `.http` files in version control (they contain query structure, not secrets)

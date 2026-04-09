@@ -146,7 +146,7 @@ labels: bug
 
 ## Steps to Reproduce
 
-1. Run `okta-client <command> <args>`
+1. Run `nfauth <command> <args>`
 2. See error
 
 ## Expected Behavior
@@ -161,7 +161,7 @@ labels: bug
 
 - OS: [macOS 14 / Ubuntu 22.04 / Windows 11]
 - Deno version: [output of `deno --version`]
-- Tool version: [output of `okta-client --version`]
+- Tool version: [output of `nfauth --version`]
 ```
 
 ### Feature Request (`feature_request.md`)
@@ -233,7 +233,7 @@ For `main` branch:
 ## Repository Settings
 
 - **Description**: one-line summary matching README pitch
-- **Topics/tags**: `deno`, `typescript`, `cli`, `okta`, `oidc`, `oauth2` (or `graphql`, `http`)
+- **Topics/tags**: `deno`, `typescript`, `cli`, `oauth`, `oidc`, `oauth2` (or `graphql`, `http`)
 - **Website**: link to usage docs or npm/jsr registry page
 - **Social preview**: generate with tool logo + name
 

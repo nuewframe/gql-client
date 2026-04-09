@@ -46,7 +46,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Standalone repository — extracted from `okta-gql-clients` monorepo
+- Standalone repository — extracted from a legacy monorepo
 - `context.md` and `tool-spec.md` for AI-assisted development
 - `.github/instructions/` and `.github/skills/` for Copilot integration
 
@@ -70,7 +70,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - `list [dir]` — recursively list `.http` files
 - `config show` — display `~/.gql-client/config.json`
 - `config set-env` — set default environment
-- `auth status` — check okta-client credential status
+- `auth status` — check nfauth credential status
 - `auth clear` — remove stored credentials
 - JetBrains HTTP Client format parser with `@VAR` declarations and `{{ VAR }}` substitution
 - `{{ $( command ) }}` shell command substitution (with `--allow-commands` guard)

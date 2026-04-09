@@ -3,7 +3,7 @@
 ## Tool Purpose
 
 `gql-client` is a standalone Deno CLI for executing GraphQL queries and mutations
-from `.http` files. It integrates with `okta-client` by reading tokens from
+from `.http` files. It integrates with `nfauth` by reading tokens from
 `~/.nuewframe/credential.json` and injecting them as `Authorization: Bearer` headers.
 
 ## Architecture
@@ -41,7 +41,7 @@ utils/
   logger.ts                    ← Capability: Logger class (writes to stderr)
 ```
 
-**Integration contract**: reads `~/.nuewframe/credential.json` (written by `okta-client`).
+**Integration contract**: reads `~/.nuewframe/credential.json` (written by `nfauth`).
 The `access_token` field is used as the `Authorization: Bearer` header. When the credential
 file is absent, auth is silently skipped unless the file explicitly declares an auth header
 via `{{ TOKEN }}` substitution.
@@ -112,7 +112,7 @@ Variable declarations use `@VAR: value` syntax. Substitutions use `{{ VAR }}`.
 
 ```http
 @HOST_URL: "https://api.example.com/graphql"
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( nfauth token access ) }}
 
 ###
 POST {{ HOST_URL }} HTTP/1.1

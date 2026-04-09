@@ -3,7 +3,7 @@
 ## Purpose
 
 `gql-client` is a standalone Deno CLI for executing GraphQL queries and mutations
-from `.http` files. It integrates with `okta-client` by reading tokens from
+from `.http` files. It integrates with `nfauth` by reading tokens from
 `~/.nuewframe/credential.json` and injecting them as `Authorization: Bearer` headers.
 Results are printed to stdout in multiple formats, enabling pipeline composition with
 `jq`, `yq`, and other Unix tools.
@@ -16,7 +16,7 @@ commands/
   run.ts                   Run one or all requests from a .http file
   list.ts                  Recursively list .http files in a directory
   config.ts                Manage ~/.nuewframe/gql-client/config.json (show)
-  auth.ts                  Check/clear okta-client credentials (status/clear)
+  auth.ts                  Check/clear nfauth credentials (status/clear)
 config/
   config.ts                Load/save ~/.nuewframe/gql-client/config.json, type definitions
 utils/
@@ -26,7 +26,7 @@ utils/
 
 ## Integration Contract
 
-This tool **reads** `~/.nuewframe/credential.json` (written by `okta-client`).
+This tool **reads** `~/.nuewframe/credential.json` (written by `nfauth`).
 The `access_token` field is injected as `Authorization: Bearer <token>`.
 
 When the credential file is absent, auth is silently skipped. If the `.http` file
@@ -142,7 +142,7 @@ Total: 13 tests, all passing.
 
 ## Security Invariants
 
-1. Tokens in `.http` files must use `{{ $( okta-client get access-token ) }}`, never hardcoded
+1. Tokens in `.http` files must use `{{ $( nfauth token access ) }}`, never hardcoded
 2. `--allow-run` is granted only when `--allow-commands` is explicitly passed
 3. Credential file absence is a no-op (silently unauthenticated), not an error
 4. No token values ever appear in log output

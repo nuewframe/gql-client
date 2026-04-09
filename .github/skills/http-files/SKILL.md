@@ -19,7 +19,7 @@ A `.http` file holds one or more GraphQL requests in the JetBrains HTTP Client f
 
 ```http
 @HOST_URL: "https://api.example.com/graphql"
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( nfauth token access ) }}
 
 ###
 POST {{ HOST_URL }} HTTP/1.1
@@ -55,11 +55,11 @@ query {
 }
 ```
 
-### With Okta authentication
+### With nfauth authentication
 
 ```http
 @HOST_URL: "https://api.example.com/graphql"
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( nfauth token access ) }}
 
 ###
 POST {{ HOST_URL }} HTTP/1.1
@@ -79,7 +79,7 @@ query GetMe {
 
 ```http
 @HOST_URL: "https://api.example.com/graphql"
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( nfauth token access ) }}
 
 ###
 POST {{ HOST_URL }} HTTP/1.1
@@ -109,7 +109,7 @@ Content-Type: application/json
 
 ```http
 @HOST_URL: "https://api.example.com/graphql"
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( nfauth token access ) }}
 
 ###
 POST {{ HOST_URL }} HTTP/1.1
@@ -229,7 +229,7 @@ gql-client list queries/
 ```http
 # development.http — use dev endpoint
 @HOST_URL: "https://dev-api.example.com/graphql"
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( nfauth token access ) }}
 
 ###
 POST {{ HOST_URL }} HTTP/1.1
@@ -251,7 +251,7 @@ gql-client config set-default production
 
 ```http
 # ✅ Correct — command substitution
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( nfauth token access ) }}
 
 # ✅ Correct — short-lived token injected at runtime  
 @TOKEN: {{ $( cat /tmp/dev-token.txt ) }}

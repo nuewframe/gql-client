@@ -116,13 +116,13 @@ The command must check for this flag and fail safely if absent:
 
 ```typescript
 export const authCommand = new Command()
-  .description('Check or clear okta-client credentials');
+  .description('Check or clear nfauth credentials');
 
 authCommand.command('status', 'Show credential status')
   .action(async () => {
     const creds = await loadCredentials();
     if (!creds) {
-      console.log('❌ No credentials found. Run: okta-client login');
+      console.log('❌ No credentials found. Run: nfauth login');
       return;
     }
     console.log('✅ Credentials found');

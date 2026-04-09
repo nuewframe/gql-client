@@ -109,7 +109,7 @@ gql-client config set-default production --env-file ./config.json
 
 ```http
 @HOST_URL: "https://api.example.com/graphql"
-@TOKEN: {{ $( okta-client get access-token ) }}
+@TOKEN: {{ $( nfauth token access ) }}
 
 ###
 POST {{ HOST_URL }} HTTP/1.1
@@ -159,7 +159,7 @@ See `.github/instructions/gql-files.instructions.md` for the full format spec.
 
 ## Credential File (read-only for gql-client)
 
-Location: `~/.nuewframe/credential.json` (written by `okta-client`)
+Location: `~/.nuewframe/credential.json` (written by `nfauth`)
 
 The `access_token` field is read and injected as `Authorization: Bearer <token>`.
 If the file is absent, auth headers are not injected (silently unauthenticated).

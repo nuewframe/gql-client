@@ -95,9 +95,9 @@
 
 **Sprint 2 — Auth removal + env file support (2026-04-06)**
 
-Design decision: remove the implicit okta-client credential auto-injection
+Design decision: remove the implicit nfauth credential auto-injection
 entirely. Users declare their own auth variables in `.http` files or supply
-them via an external env file. This removes the okta-client coupling and
+them via an external env file. This removes the nfauth coupling and
 makes auth behaviour explicit and transparent.
 
 Changes:
@@ -110,7 +110,7 @@ Changes:
   - Hard-coded values: `TOKEN=mysecret`
   - System env vars: `TOKEN=$GITHUB_TOKEN` or `TOKEN=${GITHUB_TOKEN}`
   - Command substitution (requires --allow-commands):
-    `TOKEN={{ $( okta-client get access-token ) }}`
+    `TOKEN={{ $( nfauth token access ) }}`
 - Variables from the env file are injected as base variables into the parser
   (lowest precedence). Inline `@VAR` declarations in the `.http` file
   override them.

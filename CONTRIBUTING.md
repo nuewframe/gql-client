@@ -73,7 +73,7 @@ test: add parser test for multi-line query body
 ## Security Rules
 
 - Never commit access tokens or API keys in `.http` example files
-- Use `{{ $( okta-client get access-token ) }}` for token injection
+- Use `{{ $( nfauth token access ) }}` for token injection
 - Report security issues privately — see SECURITY.md (coming soon)
 
 ## Commit Message Convention

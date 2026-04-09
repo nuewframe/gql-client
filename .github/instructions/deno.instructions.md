@@ -20,7 +20,7 @@ All code follows a strict layering order: **Capability → Data Structure → Fu
    capability, data, and functions together and exposes them to the user.
 5. **Integration** — Contracts that connect layers: shared types imported across modules,
    the `ParsedGqlFile → GqlContent[]` pipeline, stdout/stderr output contract, and the
-   `~/.nuewframe/` file-system contract with `okta-client`.
+   `~/.nuewframe/` file-system contract with `nfauth`.
 
 When adding new code, work top-down through these layers. Define the types first, implement
 the functions that operate on them, then compose everything in the command handler.
@@ -114,7 +114,7 @@ const config = getConfig(); // returns {} if file missing
 
 ## Credential File — `~/.nuewframe/credential.json`
 
-Written by `okta-client`. The `access_token` is the `Authorization: Bearer` header value.
+Written by `nfauth`. The `access_token` is the `Authorization: Bearer` header value.
 
 ```typescript
 import { loadCredentials } from '../utils/credentials.ts';

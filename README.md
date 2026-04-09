@@ -151,7 +151,7 @@ gql-client config set-default production --env-file ./config.json
 
 ## .http File Format
 
-Files follow the [JetBrains HTTP Client](https://www.jetbrains.com/help/idea/http-client-in-product-code-editor.html) extended format.
+`gql-client` uses a custom `.http` format optimized for GraphQL requests, with syntax inspired by other HTTP Client.
 
 ```http
 @HOST_URL: "https://api.example.com/graphql"
